@@ -32,12 +32,6 @@ internal class TableParameterVisitor(IDbSchemaRetriever dbSchemaRetriever) : IQu
         };
 
         KeyInfo[] relationKeys = _dbSchemaRetriever.GetForeignKeyMembers(selectExpressions.From, tableType);
-        HashSet<MemberInfo> primaryKeys = new (_dbSchemaRetriever.GetPrimaryKeyMembers(tableType));
-        if (!primaryKeys.SetEquals(relationKeys.Select(k => k.PrincipalKey)))
-        {
-            throw new InvalidOperationException("Only foreign keys on the table primary keys are supported");
-        }
-
 
         foreach (KeyInfo keyInfo in relationKeys)
         {
