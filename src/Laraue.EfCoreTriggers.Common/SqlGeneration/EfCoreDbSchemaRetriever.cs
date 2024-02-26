@@ -53,6 +53,10 @@ namespace Laraue.EfCoreTriggers.Common.SqlGeneration
         }
 
         /// <inheritdoc />
+        public bool IsModel(Type type) =>
+            Model.FindEntityType(type) is not null;
+
+        /// <inheritdoc />
         public string GetTableName(Type type)
         {
             return GetEntityType(type).GetTableName()

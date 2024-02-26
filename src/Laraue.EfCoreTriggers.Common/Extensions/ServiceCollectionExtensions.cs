@@ -3,7 +3,9 @@ using Laraue.EfCoreTriggers.Common.Converters.MemberAccess;
 using Laraue.EfCoreTriggers.Common.Converters.MethodCall;
 using Laraue.EfCoreTriggers.Common.Converters.MethodCall.CSharpMethods;
 using Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable.Count;
+using Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable.Sum;
 using Laraue.EfCoreTriggers.Common.Converters.MethodCall.Functions;
+using Laraue.EfCoreTriggers.Common.Converters.QueryPart;
 using Laraue.EfCoreTriggers.Common.Migrations;
 using Laraue.EfCoreTriggers.Common.SqlGeneration;
 using Laraue.EfCoreTriggers.Common.TriggerBuilders.Abstractions;
@@ -75,6 +77,16 @@ namespace Laraue.EfCoreTriggers.Common.Extensions
         {
             return services.AddScoped<IExpressionVisitor<TVisitorType>, TImpl>();
         }
+
+        /// <summary>
+        /// Register new <see cref="IQueryPartVisitor"/> into container.
+        /// All visitors are applied in reverse order.
+        /// </summary>
+        /// <typeparam name="TImpl">Implementation of visitor.</typeparam>
+        /// <param name="services">Service collection.</param>
+        /// <returns></returns>
+        public static IServiceCollection AddQuryPartVisitor<TImpl>(this IServiceCollection services)
+            where TImpl : class, IQueryPartVisitor => services.AddScoped<IQueryPartVisitor, TImpl>();
     
         /// <summary>
         /// Add the most used EFCore triggers services into container. 
@@ -86,20 +98,20 @@ namespace Laraue.EfCoreTriggers.Common.Extensions
             return services.AddScoped<ITriggerActionVisitorFactory, TriggerActionVisitorFactory>()
                 .AddScoped<IExpressionVisitorFactory, ExpressionVisitorFactory>()
                 .AddScoped<IMemberInfoVisitorFactory, MemberInfoVisitorFactory>()
-            
+
                 .AddTriggerActionVisitor<TriggerDeleteAction, TriggerDeleteActionVisitor>()
                 .AddTriggerActionVisitor<TriggerInsertAction, TriggerInsertActionVisitor>()
                 .AddTriggerActionVisitor<TriggerRawAction, TriggerRawActionVisitor>()
                 .AddTriggerActionVisitor<TriggerUpdateAction, TriggerUpdateActionVisitor>()
                 .AddTriggerActionVisitor<TriggerCondition, TriggerConditionVisitor>()
-                
+
                 .AddScoped<IMemberInfoVisitor<LambdaExpression>, SetLambdaExpressionVisitor>()
                 .AddScoped<IMemberInfoVisitor<MemberInitExpression>, SetMemberInitExpressionVisitor>()
                 .AddScoped<IMemberInfoVisitor<NewExpression>, SetNewExpressionVisitor>()
                 .AddScoped<IMemberInfoVisitor<BinaryExpression>, SetBinaryExpressionVisitor>()
-            
+
                 .AddScoped<IDbSchemaRetriever, EfCoreDbSchemaRetriever>()
-            
+
                 .AddExpressionVisitor<BinaryExpression, BinaryExpressionVisitor>()
                 .AddExpressionVisitor<UnaryExpression, UnaryExpressionVisitor>()
                 .AddExpressionVisitor<MemberExpression, MemberExpressionVisitor>()
@@ -107,12 +119,17 @@ namespace Laraue.EfCoreTriggers.Common.Extensions
                 .AddExpressionVisitor<MethodCallExpression, MethodCallExpressionVisitor>()
                 .AddExpressionVisitor<LambdaExpression, LambdaExpressionVisitor>()
                 .AddExpressionVisitor<ParameterExpression, ParameterExpressionVisitor>()
-            
+
                 .AddMethodCallConverter<CountVisitor>()
+                .AddMethodCallConverter<SumVisitor>()
                 .AddMethodCallConverter<CoalesceVisitor>()
                 .AddMethodCallConverter<GetTableNameVisitor>()
                 .AddMethodCallConverter<GetColumnNameVisitor>()
-            
+
+                .AddQuryPartVisitor<TableParameterVisitor>()
+                .AddQuryPartVisitor<EnumerableMemberVisitor>()
+                .AddQuryPartVisitor<WhereVisitor>()
+
                 .AddScoped<VisitingInfo>()
 
                 .AddScoped<ITriggerModelDiffer, TriggerModelDiffer>()

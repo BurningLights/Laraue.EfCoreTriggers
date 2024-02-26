@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
+using Laraue.EfCoreTriggers.Common.Converters.QueryPart;
+using Laraue.EfCoreTriggers.Common.Extensions;
 using Laraue.EfCoreTriggers.Common.SqlGeneration;
 using Laraue.EfCoreTriggers.Common.TriggerBuilders;
 using Laraue.EfCoreTriggers.Common.TriggerBuilders.TableRefs;
@@ -21,111 +24,111 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable
         private readonly IDbSchemaRetriever _schemaRetriever;
         private readonly ISqlGenerator _sqlGenerator;
         private readonly IExpressionVisitorFactory _expressionVisitorFactory;
+        private readonly IEnumerable<IQueryPartVisitor> _queryPartVisitors;
 
         /// <inheritdoc />
         protected BaseEnumerableVisitor(
             IExpressionVisitorFactory visitorFactory,
             IDbSchemaRetriever schemaRetriever,
-            ISqlGenerator sqlGenerator) 
+            ISqlGenerator sqlGenerator,
+            IEnumerable<IQueryPartVisitor> queryPartVisitors) 
             : base(visitorFactory)
         {
             _schemaRetriever = schemaRetriever;
             _sqlGenerator = sqlGenerator;
             _expressionVisitorFactory = visitorFactory;
+            // Reverse the order the visitors are checked
+            _queryPartVisitors = queryPartVisitors.Reverse();
         }
-        
+
         /// <inheritdoc />
         public override SqlBuilder Visit(MethodCallExpression expression, VisitedMembers visitedMembers)
         {
-            var whereExpressions = new HashSet<Expression>();
-            var exp = GetFlattenExpressions(expression, whereExpressions);
-
-            if (exp is not MemberExpression baseMember)
+            Debugger.Launch();
+            SelectExpressions expressions = GetFlattenExpressions(expression);
+            if (expressions.From is null)
             {
-                throw new InvalidOperationException("Member expression was excepted");
-            }
-            
-            var enumerableMemberType = baseMember.Type;
-            
-            var originalSetType = baseMember.Expression?.Type
-                ?? throw new InvalidOperationException("Not null expression in the passed member excepted.");
-
-            if (!typeof(IEnumerable).IsAssignableFrom(enumerableMemberType) || !enumerableMemberType.IsGenericType)
-            {
-                throw new NotSupportedException($"Don't know how to translate expression {expression}");
-            }
-            
-            var entityType = baseMember.Type.GetGenericArguments()[0];
-
-            var otherArguments = expression.Arguments
-                .Skip(1)
-                .ToArray();
-            
-            var selectSql = Visit(otherArguments, visitedMembers);
-
-            if (selectSql.Item2 is not null)
-            {
-                whereExpressions.Add(selectSql.Item2);
+                throw new InvalidOperationException("No FROM model for the query was found.");
             }
 
-            var finalSql = SqlBuilder.FromString("(");
-            
-            finalSql.WithIdent(x=> x
+
+            SqlBuilder finalSql = SqlBuilder.FromString("(");
+            _ = finalSql.WithIdent(x => x
                 .Append("SELECT ")
-                .Append(selectSql.Item1)
-                .AppendNewLine($"FROM {_sqlGenerator.GetTableSql(entityType)}")
-                .AppendNewLine($"INNER JOIN {_sqlGenerator.GetTableSql(originalSetType)} ON "));
-
-            var keys = _schemaRetriever.GetForeignKeyMembers(entityType, originalSetType);
-
-            var joinParts = new List<string>();
-            foreach (var key in keys)
+                .Append(Visit(expressions.FieldArguments, visitedMembers))
+                .AppendNewLine($"FROM {_sqlGenerator.GetTableSql(expressions.From)}"));
+            if (expressions.Where.Count != 0)
             {
-                var column1Sql = _sqlGenerator.GetColumnSql(entityType, key.ForeignKey, ArgumentType.Default);
+                _ = finalSql
+                    .AppendNewLine("WHERE ")
+                    .AppendJoin(" AND ", expressions.Where.Select(e => _expressionVisitorFactory.Visit(e, visitedMembers)));
+            }
 
-                if (baseMember.Expression is not MemberExpression memberExpression)
+            if (expressions.OrderBy.Count != 0)
+            {
+                _ = finalSql
+                    .AppendNewLine("ORDER BY ")
+                    .AppendJoin(", ", expressions.OrderBy.Select(e => _expressionVisitorFactory.Visit(e, visitedMembers)));
+            }
+
+            if (expressions.Limit is not null)
+            {
+                _ = finalSql
+                    .AppendNewLine("LIMIT ")
+                    .Append(_expressionVisitorFactory.Visit(expressions.Limit, visitedMembers));
+                if (expressions.Offset is not null)
                 {
-                    throw new InvalidOperationException("Member expression was excepted");
+                    _ = finalSql
+                        .Append(" OFFSET ")
+                        .Append(_expressionVisitorFactory.Visit(expressions.Offset, visitedMembers));
                 }
-                
-                var argument2Type = memberExpression.Member.GetArgumentType();
-                
-                var column2WhereSql = _sqlGenerator.GetColumnValueReferenceSql(originalSetType, key.PrincipalKey, argument2Type);
-                visitedMembers.AddMember(argument2Type, key.PrincipalKey);
-                
-                var column2JoinSql = _sqlGenerator.GetColumnSql(originalSetType, key.PrincipalKey, ArgumentType.Default);
-
-                joinParts.Add($"{column1Sql} = {column2JoinSql}");
-                joinParts.Add($"{column1Sql} = {column2WhereSql}");
-            }
-
-            foreach (var e in whereExpressions)
+            } else if (expressions.Offset is not null)
             {
-                joinParts.Add(_expressionVisitorFactory.Visit(e, visitedMembers));
+                _ = finalSql
+                    .AppendNewLine("LIMIT -1 OFFSET ")
+                    .Append(_expressionVisitorFactory.Visit(expressions.Offset, visitedMembers));
             }
 
-            finalSql.AppendJoin(" AND ", joinParts);
-            
-            finalSql.Append(")");
+            _ = finalSql.Append(")");
 
             return finalSql;
         }
 
-        private Expression GetFlattenExpressions(MethodCallExpression methodCallExpression, HashSet<Expression> whereExpressions)
+        private SelectExpressions GetFlattenExpressions(MethodCallExpression methodCallExpression)
         {
-            while (true)
-            {
-                if (methodCallExpression.Arguments[0] is not MethodCallExpression childCall ||
-                    childCall.Method.Name != nameof(System.Linq.Enumerable.Where))
-                {
-                    return methodCallExpression.Arguments[0];
-                }
-                
-                whereExpressions.Add(childCall.Arguments[1]);
+            SelectExpressions selectExpressions = new();
+            SeparateArguments(methodCallExpression.Arguments.Skip(1), selectExpressions);
+            Expression? currExpression = methodCallExpression.Arguments[0];
 
-                methodCallExpression = childCall;
+            while (currExpression != null)
+            {
+                bool applied = false;
+                foreach (IQueryPartVisitor visitor in _queryPartVisitors)
+                {
+                    if (visitor.IsApplicable(currExpression))
+                    {
+                        currExpression = visitor.Visit(currExpression, selectExpressions);
+                        applied = true;
+                        break;
+                    }
+                }
+
+                if (!applied)
+                {
+                    throw new ArgumentException($"Cannot process query part {currExpression}");
+                }
             }
+
+            return selectExpressions;
         }
+
+        /// <summary>
+        /// Separete the method arguments into the appropriate place in the SelectExpressions
+        /// </summary>
+        /// <param name="arguments">The method call arguments</param>
+        /// <param name="selectExpressions">The SelectExpressions instance</param>
+        /// <returns></returns>
+        protected abstract void SeparateArguments(IEnumerable<Expression> arguments, SelectExpressions selectExpressions);
 
         /// <summary>
         /// Generate pairs SqlBuilder -> Expression for all passed expressions
@@ -133,7 +136,7 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable
         /// <param name="arguments"></param>
         /// <param name="visitedMembers"></param>
         /// <returns></returns>
-        protected abstract (SqlBuilder, Expression) Visit(
+        protected abstract SqlBuilder Visit(
             IEnumerable<Expression> arguments,
             VisitedMembers visitedMembers);
     }

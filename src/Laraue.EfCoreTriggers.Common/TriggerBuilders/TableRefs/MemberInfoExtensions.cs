@@ -52,7 +52,27 @@ namespace Laraue.EfCoreTriggers.Common.TriggerBuilders.TableRefs
         {
             return TryGetTableRef(memberInfo, typeof(INewTableRef<>), out refType);
         }
-    
+
+        /// <summary>
+        /// Determines whether the passed member represents a <see cref="ITableRef{TEntity}"/>.
+        /// </summary>
+        /// <param name="memberInfo"></param>
+        /// <returns></returns>
+        public static bool IsTableRef(this MemberInfo memberInfo) => 
+            memberInfo.TryGetOldTableRef(out _) ||
+            memberInfo.TryGetNewTableRef(out _);
+
+        /// <summary>
+        /// Returns the type of table reference if the passed member represents a <see cref="ITableRef{TEntity}"/>
+        /// </summary>
+        /// <param name="memberInfo"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        public static Type GetTableRefType(this MemberInfo memberInfo) => 
+            memberInfo.TryGetOldTableRef(out Type? type) ? type
+                : memberInfo.TryGetNewTableRef(out type) ? type : 
+                    throw new ArgumentException("The provided member is not a table reference.");
+
         private static bool TryGetTableRef(this MemberInfo memberInfo, Type tableRefType, [NotNullWhen(true)] out Type? refType)
         {
             refType = null;

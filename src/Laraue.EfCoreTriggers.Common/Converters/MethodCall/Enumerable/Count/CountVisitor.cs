@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using Laraue.EfCoreTriggers.Common.Converters.QueryPart;
 using Laraue.EfCoreTriggers.Common.SqlGeneration;
 using Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors;
 
@@ -21,15 +22,22 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable.Count
         public CountVisitor(
             IExpressionVisitorFactory visitorFactory,
             IDbSchemaRetriever schemaRetriever,
-            ISqlGenerator sqlGenerator)
-            : base(visitorFactory, schemaRetriever, sqlGenerator)
+            ISqlGenerator sqlGenerator, IEnumerable<IQueryPartVisitor> queryPartVisitors)
+            : base(visitorFactory, schemaRetriever, sqlGenerator, queryPartVisitors)
         {
         }
-    
+
         /// <inheritdoc />
-        protected override (SqlBuilder, Expression) Visit(IEnumerable<Expression> arguments, VisitedMembers visitedMembers)
+        protected override SqlBuilder Visit(IEnumerable<Expression> arguments, VisitedMembers visitedMembers) =>
+            SqlBuilder.FromString("count(*)");
+        
+        protected override void SeparateArguments(IEnumerable<Expression> arguments, SelectExpressions selectExpressions)
         {
-            return  (SqlBuilder.FromString("count(*)"), arguments.FirstOrDefault());
+            if (arguments.Any())
+            {
+                _ = selectExpressions.Where.Add(arguments.First());
+            }
         }
+
     }
 }

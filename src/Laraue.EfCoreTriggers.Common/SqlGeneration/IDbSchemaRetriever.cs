@@ -25,6 +25,13 @@ namespace Laraue.EfCoreTriggers.Common.SqlGeneration
         /// <param name="entity"></param>
         /// <returns></returns>
         string GetTableName(Type entity);
+
+        /// <summary>
+        /// Checks whether the provided type is a model type
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        bool IsModel(Type entity);
     
         /// <summary>
         /// Return schema name for the passed entity if it is exists.
