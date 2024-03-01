@@ -190,5 +190,16 @@ namespace Laraue.EfCoreTriggers.Common.SqlGeneration
         {
             return $"{GetDelimiter()}{value}{GetDelimiter()}";
         }
+
+        /// <inheritdoc />
+        public string GetJoinTypeSql(JoinType joinType) => joinType switch
+        {
+            JoinType.LEFT => "LEFT OUTER JOIN",
+            JoinType.RIGHT => "RIGHT OUTER JOIN",
+            JoinType.FULL => "FULL OUTER JOIN",
+            JoinType.INNER => "INNER JOIN",
+            JoinType.CROSS => "CROSS JOIN",
+            _ => throw new ArgumentException($"Uknown join type {joinType}.")
+        };
     }
 }

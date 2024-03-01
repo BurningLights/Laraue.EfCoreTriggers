@@ -17,7 +17,7 @@ internal class TableParameterVisitor(IDbSchemaRetriever dbSchemaRetriever) : IQu
         (expression is ParameterExpression paramExpression && _dbSchemaRetriever.IsModel(paramExpression.Type)) ||
         (expression is MemberExpression memberExpression && memberExpression.Member.IsTableRef() &&
             memberExpression.Expression is ParameterExpression);
-    public Expression? Visit(Expression expression, SelectExpressions selectExpressions)
+    public Expression? Visit(Expression expression, TranslatedSelect selectExpressions)
     {
         if (selectExpressions.From is null)
         {

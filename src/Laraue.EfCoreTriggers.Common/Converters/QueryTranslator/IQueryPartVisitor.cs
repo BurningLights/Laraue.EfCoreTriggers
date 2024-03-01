@@ -11,5 +11,5 @@ public interface IQueryPartVisitor
 {
     bool IsApplicable(Expression expression);
 
-    Expression? Visit(Expression expression, SelectExpressions selectExpressions);
+    Expression? Visit(Expression expression, TranslatedSelect selectExpressions);
 }

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using Laraue.EfCoreTriggers.Common.Converters.QueryPart;
+using Laraue.EfCoreTriggers.Common.Converters.QueryTranslator;
 using Laraue.EfCoreTriggers.Common.Extensions;
 using Laraue.EfCoreTriggers.Common.SqlGeneration;
 using Laraue.EfCoreTriggers.Common.TriggerBuilders;
@@ -25,27 +26,26 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable
         private readonly ISqlGenerator _sqlGenerator;
         private readonly IExpressionVisitorFactory _expressionVisitorFactory;
         private readonly IEnumerable<IQueryPartVisitor> _queryPartVisitors;
+        private readonly ISelectTranslator _selectTranslator;
 
         /// <inheritdoc />
         protected BaseEnumerableVisitor(
             IExpressionVisitorFactory visitorFactory,
             IDbSchemaRetriever schemaRetriever,
             ISqlGenerator sqlGenerator,
-            IEnumerable<IQueryPartVisitor> queryPartVisitors) 
+            ISelectTranslator selectTranslator) 
             : base(visitorFactory)
         {
             _schemaRetriever = schemaRetriever;
             _sqlGenerator = sqlGenerator;
             _expressionVisitorFactory = visitorFactory;
-            // Reverse the order the visitors are checked
-            _queryPartVisitors = queryPartVisitors.Reverse();
+            _selectTranslator = selectTranslator;
         }
 
         /// <inheritdoc />
         public override SqlBuilder Visit(MethodCallExpression expression, VisitedMembers visitedMembers)
         {
-            Debugger.Launch();
-            SelectExpressions expressions = GetFlattenExpressions(expression);
+            TranslatedSelect expressions = _selectTranslator.Translate(expression);
             if (expressions.From is null)
             {
                 throw new InvalidOperationException("No FROM model for the query was found.");
@@ -55,13 +55,25 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable
             SqlBuilder finalSql = SqlBuilder.FromString("(");
             _ = finalSql.WithIdent(x => x
                 .Append("SELECT ")
-                .Append(Visit(expressions.FieldArguments, visitedMembers))
+                .Append(Visit(expressions.Select, visitedMembers))
                 .AppendNewLine($"FROM {_sqlGenerator.GetTableSql(expressions.From)}"));
-            if (expressions.Where.Count != 0)
+
+            foreach (TableJoin join in  expressions.Joins)
+            {
+                SqlBuilder joinSql = finalSql.WithIdent(x => x
+                    .AppendNewLine(_sqlGenerator.GetJoinTypeSql(join.JoinType))
+                    .Append(" ").Append(_sqlGenerator.GetTableSql(join.Table)));
+                if (join.On is not null)
+                {
+                    joinSql.Append(" ON (").Append(_expressionVisitorFactory.Visit(join.On, visitedMembers)).Append(")");
+                }
+            }
+
+            if (expressions.Where is not null)
             {
                 _ = finalSql
                     .AppendNewLine("WHERE ")
-                    .AppendJoin(" AND ", expressions.Where.Select(e => _expressionVisitorFactory.Visit(e, visitedMembers)));
+                    .Append(_expressionVisitorFactory.Visit(expressions.Where, visitedMembers));
             }
 
             if (expressions.OrderBy.Count != 0)
@@ -94,50 +106,12 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable
             return finalSql;
         }
 
-        private SelectExpressions GetFlattenExpressions(MethodCallExpression methodCallExpression)
-        {
-            SelectExpressions selectExpressions = new();
-            SeparateArguments(methodCallExpression.Arguments.Skip(1), selectExpressions);
-            Expression? currExpression = methodCallExpression.Arguments[0];
-
-            while (currExpression != null)
-            {
-                bool applied = false;
-                foreach (IQueryPartVisitor visitor in _queryPartVisitors)
-                {
-                    if (visitor.IsApplicable(currExpression))
-                    {
-                        currExpression = visitor.Visit(currExpression, selectExpressions);
-                        applied = true;
-                        break;
-                    }
-                }
-
-                if (!applied)
-                {
-                    throw new ArgumentException($"Cannot process query part {currExpression}");
-                }
-            }
-
-            return selectExpressions;
-        }
-
         /// <summary>
-        /// Separete the method arguments into the appropriate place in the SelectExpressions
+        /// Generate pairs SqlBuilder -> Expression for the select expression
         /// </summary>
-        /// <param name="arguments">The method call arguments</param>
-        /// <param name="selectExpressions">The SelectExpressions instance</param>
-        /// <returns></returns>
-        protected abstract void SeparateArguments(IEnumerable<Expression> arguments, SelectExpressions selectExpressions);
-
-        /// <summary>
-        /// Generate pairs SqlBuilder -> Expression for all passed expressions
-        /// </summary>
-        /// <param name="arguments"></param>
+        /// <param name="select"></param>
         /// <param name="visitedMembers"></param>
         /// <returns></returns>
-        protected abstract SqlBuilder Visit(
-            IEnumerable<Expression> arguments,
-            VisitedMembers visitedMembers);
+        protected abstract SqlBuilder Visit(Expression? select, VisitedMembers visitedMembers);
     }
 }

@@ -16,11 +16,21 @@ internal class SumVisitor(IExpressionVisitorFactory visitorFactory, IDbSchemaRet
 {
     protected override string MethodName => nameof(System.Linq.Enumerable.Sum);
 
-    protected override void SeparateArguments(IEnumerable<Expression> arguments, SelectExpressions selectExpressions) => 
+    protected override void SeparateArguments(IEnumerable<Expression> arguments, TranslatedSelect selectExpressions)
+    {
+        if (arguments.Any() && selectExpressions.FieldArguments.Count > 0)
+        {
+            throw new NotImplementedException("Cannot use Sum with an argument when a Select has already been applied.");
+        }
         selectExpressions.FieldArguments.AddRange(arguments);
+    }
 
     protected override SqlBuilder Visit(IEnumerable<Expression> arguments, VisitedMembers visitedMembers)
     {
+        if (arguments.Count() != 1)
+        {
+            throw new ArgumentException("There must be exactly one field specified to be summed over.");
+        }
         SqlBuilder sqlBuilder = VisitorFactory.Visit(arguments.First(), visitedMembers);
         return SqlBuilder.FromString($"SUM({sqlBuilder})");
     }

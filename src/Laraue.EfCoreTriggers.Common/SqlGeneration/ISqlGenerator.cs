@@ -128,5 +128,12 @@ namespace Laraue.EfCoreTriggers.Common.SqlGeneration
         /// </summary>
         /// <returns></returns>
         string GetColumnValueReferenceSql(Type? type, MemberInfo member, ArgumentType argumentType);
+
+        /// <summary>
+        /// Get SQL join expression
+        /// </summary>
+        /// <param name="joinType">The join type</param>
+        /// <returns></returns>
+        string GetJoinTypeSql(JoinType joinType);
     }
 }

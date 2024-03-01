@@ -6,6 +6,7 @@ using Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable.Count;
 using Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable.Sum;
 using Laraue.EfCoreTriggers.Common.Converters.MethodCall.Functions;
 using Laraue.EfCoreTriggers.Common.Converters.QueryPart;
+using Laraue.EfCoreTriggers.Common.Converters.QueryTranslator;
 using Laraue.EfCoreTriggers.Common.Migrations;
 using Laraue.EfCoreTriggers.Common.SqlGeneration;
 using Laraue.EfCoreTriggers.Common.TriggerBuilders.Abstractions;
@@ -126,15 +127,13 @@ namespace Laraue.EfCoreTriggers.Common.Extensions
                 .AddMethodCallConverter<GetTableNameVisitor>()
                 .AddMethodCallConverter<GetColumnNameVisitor>()
 
-                .AddQuryPartVisitor<TableParameterVisitor>()
-                .AddQuryPartVisitor<EnumerableMemberVisitor>()
-                .AddQuryPartVisitor<WhereVisitor>()
-
                 .AddScoped<VisitingInfo>()
 
                 .AddScoped<ITriggerModelDiffer, TriggerModelDiffer>()
 
-                .AddScoped<IUpdateExpressionVisitor, UpdateExpressionVisitor>();
+                .AddScoped<IUpdateExpressionVisitor, UpdateExpressionVisitor>()
+
+                .AddScoped<ISelectTranslator, SelectExpressionVisitor>();
         }
     }
 }

@@ -1,7 +1,7 @@
 ﻿namespace Laraue.EfCoreTriggers.Common.TriggerBuilders.TableRefs
 {
     /// <inheritdoc />
-    public sealed class OldTableRef<TEntity> : IOldTableRef<TEntity>
+    public sealed class OldTableRef<TEntity> : OldTableRef, IOldTableRef<TEntity>
         where TEntity : class
     {
         /// <summary>
