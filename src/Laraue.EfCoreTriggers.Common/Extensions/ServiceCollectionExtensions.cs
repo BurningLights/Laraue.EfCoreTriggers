@@ -5,7 +5,6 @@ using Laraue.EfCoreTriggers.Common.Converters.MethodCall.CSharpMethods;
 using Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable.Count;
 using Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable.Sum;
 using Laraue.EfCoreTriggers.Common.Converters.MethodCall.Functions;
-using Laraue.EfCoreTriggers.Common.Converters.QueryPart;
 using Laraue.EfCoreTriggers.Common.Converters.QueryTranslator;
 using Laraue.EfCoreTriggers.Common.Migrations;
 using Laraue.EfCoreTriggers.Common.SqlGeneration;
@@ -79,16 +78,6 @@ namespace Laraue.EfCoreTriggers.Common.Extensions
             return services.AddScoped<IExpressionVisitor<TVisitorType>, TImpl>();
         }
 
-        /// <summary>
-        /// Register new <see cref="IQueryPartVisitor"/> into container.
-        /// All visitors are applied in reverse order.
-        /// </summary>
-        /// <typeparam name="TImpl">Implementation of visitor.</typeparam>
-        /// <param name="services">Service collection.</param>
-        /// <returns></returns>
-        public static IServiceCollection AddQuryPartVisitor<TImpl>(this IServiceCollection services)
-            where TImpl : class, IQueryPartVisitor => services.AddScoped<IQueryPartVisitor, TImpl>();
-    
         /// <summary>
         /// Add the most used EFCore triggers services into container. 
         /// </summary>

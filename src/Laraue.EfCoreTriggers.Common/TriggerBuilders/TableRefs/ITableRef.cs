@@ -14,19 +14,19 @@ namespace Laraue.EfCoreTriggers.Common.TriggerBuilders.TableRefs
     /// </summary>
     public interface ITableRef
     {
-        /// <summary>
-        /// Get a query reference to any table
-        /// </summary>
-        /// <typeparam name="TTable">The model type to query</typeparam>
-        /// <returns></returns>
-        public IEnumerable<TTable> Table<TTable>();
+        ///// <summary>
+        ///// Get a query reference to any table
+        ///// </summary>
+        ///// <typeparam name="TTable">The model type to query</typeparam>
+        ///// <returns></returns>
+        //public IEnumerable<TTable> Table<TTable>();
 
-        /// <summary>
-        /// Get a query reference to any table and refer to it by an alias
-        /// </summary>
-        /// <typeparam name="TTable">The model type to query</typeparam>
-        /// <param name="alias">The alias to give the table in the query</param>
-        /// <returns></returns>
-        public IEnumerable<TTable> Table<TTable>(string alias);
+        ///// <summary>
+        ///// Get a query reference to any table and refer to it by an alias
+        ///// </summary>
+        ///// <typeparam name="TTable">The model type to query</typeparam>
+        ///// <param name="alias">The alias to give the table in the query</param>
+        ///// <returns></returns>
+        //public IEnumerable<TTable> Table<TTable>(string alias);
     }
 }

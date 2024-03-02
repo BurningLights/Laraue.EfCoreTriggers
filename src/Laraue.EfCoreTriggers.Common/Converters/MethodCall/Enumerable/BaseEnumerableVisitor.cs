@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
-using Laraue.EfCoreTriggers.Common.Converters.QueryPart;
 using Laraue.EfCoreTriggers.Common.Converters.QueryTranslator;
 using Laraue.EfCoreTriggers.Common.Extensions;
 using Laraue.EfCoreTriggers.Common.SqlGeneration;
@@ -25,7 +24,6 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable
         private readonly IDbSchemaRetriever _schemaRetriever;
         private readonly ISqlGenerator _sqlGenerator;
         private readonly IExpressionVisitorFactory _expressionVisitorFactory;
-        private readonly IEnumerable<IQueryPartVisitor> _queryPartVisitors;
         private readonly ISelectTranslator _selectTranslator;
 
         /// <inheritdoc />
