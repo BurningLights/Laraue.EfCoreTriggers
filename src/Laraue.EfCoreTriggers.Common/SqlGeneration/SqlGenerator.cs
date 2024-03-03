@@ -201,5 +201,9 @@ namespace Laraue.EfCoreTriggers.Common.SqlGeneration
             JoinType.CROSS => "CROSS JOIN",
             _ => throw new ArgumentException($"Uknown join type {joinType}.")
         };
+
+        /// <inheritdoc />
+        public string AliasExpression(string sql, string alias) =>
+            $"({sql}) AS {WrapWithDelimiters(alias)}";
     }
 }

@@ -8,10 +8,13 @@ namespace Laraue.EfCoreTriggers.Common.TriggerBuilders.TableRefs;
 /// <summary>
 /// Base class for referring to tables in a query
 /// </summary>
-//public class TableRef : ITableRef
-//{
-//    /// <inheritdoc />
-//    public IEnumerable<TTable> Table<TTable>() => throw new NotImplementedException();
-//    /// <inheritdoc />
-//    public IEnumerable<TTable> Table<TTable>(string alias) => throw new NotImplementedException();
-//}
+public class TableRef
+{
+    /// <summary>
+    /// Reference any model table for querying
+    /// </summary>
+    /// <typeparam name="TTable">The model type to query</typeparam>
+    /// <returns></returns>
+    public IEnumerable<TTable> Table<TTable>() => throw new NotImplementedException();
+    //public IEnumerable<TTable> Table<TTable>(string alias) => throw new NotImplementedException();
+}

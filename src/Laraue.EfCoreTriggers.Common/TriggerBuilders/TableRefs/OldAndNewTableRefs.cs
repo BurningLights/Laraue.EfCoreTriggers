@@ -4,7 +4,7 @@
     /// Contains references to the table row before it was updated and after it was updated.
     /// </summary>
     /// <typeparam name="TEntity"></typeparam>
-    public sealed class OldAndNewTableRefs<TEntity> : INewTableRef<TEntity>, IOldTableRef<TEntity>
+    public sealed class OldAndNewTableRefs<TEntity> : TableRef, INewTableRef<TEntity>, IOldTableRef<TEntity>
         where TEntity : class
     {
         /// <summary>

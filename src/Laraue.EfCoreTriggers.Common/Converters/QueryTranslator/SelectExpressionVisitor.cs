@@ -45,6 +45,7 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
     {
         Expression updatedExpression = base.VisitMethodCall(node);
 
+        Debugger.Launch();
         if (updatedExpression is MethodCallExpression methodCallExpression)
         {
             if (methodCallExpression.Method.MethodMatches(typeof(Enumerable), nameof(Enumerable.Where), 2))
@@ -64,6 +65,18 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
                 {
                     translation.Select = methodCallExpression.Arguments[1];
                 }
+            }
+            else if (methodCallExpression.Method.MethodMatches(typeof(Enumerable), nameof(Enumerable.Any), 1, 2))
+            {
+                if (methodCallExpression.Arguments.Count > 1)
+                {
+                    translation.AddWhere(methodCallExpression.Arguments[1]);
+                }
+            }
+            else if (methodCallExpression.Method.MethodMatches(typeof(TableRef), nameof(TableRef.Table)) &&
+                _schemaRetriever.IsModel(methodCallExpression.Method.GetGenericArguments()[0]))
+            {
+                translation.From = methodCallExpression.Method.GetGenericArguments()[0];
             }
             else
             {

@@ -135,5 +135,13 @@ namespace Laraue.EfCoreTriggers.Common.SqlGeneration
         /// <param name="joinType">The join type</param>
         /// <returns></returns>
         string GetJoinTypeSql(JoinType joinType);
+
+        /// <summary>
+        /// Aliases an SQL expression
+        /// </summary>
+        /// <param name="sql"></param>
+        /// <param name="alias"></param>
+        /// <returns></returns>
+        string AliasExpression(string sql, string alias);
     }
 }

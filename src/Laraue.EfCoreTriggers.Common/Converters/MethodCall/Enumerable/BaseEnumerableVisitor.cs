@@ -16,34 +16,22 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable
     /// <summary>
     /// Base visitor for <see cref="IEnumerable{T}"/> extensions.
     /// </summary>
-    public abstract class BaseEnumerableVisitor : BaseMethodCallVisitor
+    /// <inheritdoc />
+    public abstract class BaseEnumerableVisitor(
+        IExpressionVisitorFactory visitorFactory,
+        ISqlGenerator sqlGenerator,
+        ISelectTranslator selectTranslator) : BaseMethodCallVisitor(visitorFactory)
     {
         /// <inheritdoc />
         protected override Type ReflectedType => typeof(System.Linq.Enumerable);
 
-        private readonly IDbSchemaRetriever _schemaRetriever;
-        private readonly ISqlGenerator _sqlGenerator;
-        private readonly IExpressionVisitorFactory _expressionVisitorFactory;
-        private readonly ISelectTranslator _selectTranslator;
-
-        /// <inheritdoc />
-        protected BaseEnumerableVisitor(
-            IExpressionVisitorFactory visitorFactory,
-            IDbSchemaRetriever schemaRetriever,
-            ISqlGenerator sqlGenerator,
-            ISelectTranslator selectTranslator) 
-            : base(visitorFactory)
-        {
-            _schemaRetriever = schemaRetriever;
-            _sqlGenerator = sqlGenerator;
-            _expressionVisitorFactory = visitorFactory;
-            _selectTranslator = selectTranslator;
-        }
+        protected ISqlGenerator SqlGenerator { get; } = sqlGenerator;
+        private readonly ISelectTranslator selectTranslator = selectTranslator;
 
         /// <inheritdoc />
         public override SqlBuilder Visit(MethodCallExpression expression, VisitedMembers visitedMembers)
         {
-            TranslatedSelect expressions = _selectTranslator.Translate(expression);
+            TranslatedSelect expressions = selectTranslator.Translate(expression);
             if (expressions.From is null)
             {
                 throw new InvalidOperationException("No FROM model for the query was found.");
@@ -54,16 +42,16 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable
             _ = finalSql.WithIdent(x => x
                 .Append("SELECT ")
                 .Append(Visit(expressions.Select, visitedMembers))
-                .AppendNewLine($"FROM {_sqlGenerator.GetTableSql(expressions.From)}"));
+                .AppendNewLine($"FROM {SqlGenerator.GetTableSql(expressions.From)}"));
 
             foreach (TableJoin join in  expressions.Joins)
             {
                 SqlBuilder joinSql = finalSql.WithIdent(x => x
-                    .AppendNewLine(_sqlGenerator.GetJoinTypeSql(join.JoinType))
-                    .Append(" ").Append(_sqlGenerator.GetTableSql(join.Table)));
+                    .AppendNewLine(SqlGenerator.GetJoinTypeSql(join.JoinType))
+                    .Append(" ").Append(SqlGenerator.GetTableSql(join.Table)));
                 if (join.On is not null)
                 {
-                    joinSql.Append(" ON (").Append(_expressionVisitorFactory.Visit(join.On, visitedMembers)).Append(")");
+                    joinSql.Append(" ON (").Append(VisitorFactory.Visit(join.On, visitedMembers)).Append(")");
                 }
             }
 
@@ -71,32 +59,32 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable
             {
                 _ = finalSql
                     .AppendNewLine("WHERE ")
-                    .Append(_expressionVisitorFactory.Visit(expressions.Where, visitedMembers));
+                    .Append(VisitorFactory.Visit(expressions.Where, visitedMembers));
             }
 
             if (expressions.OrderBy.Count != 0)
             {
                 _ = finalSql
                     .AppendNewLine("ORDER BY ")
-                    .AppendJoin(", ", expressions.OrderBy.Select(e => _expressionVisitorFactory.Visit(e, visitedMembers)));
+                    .AppendJoin(", ", expressions.OrderBy.Select(e => VisitorFactory.Visit(e, visitedMembers)));
             }
 
             if (expressions.Limit is not null)
             {
                 _ = finalSql
                     .AppendNewLine("LIMIT ")
-                    .Append(_expressionVisitorFactory.Visit(expressions.Limit, visitedMembers));
+                    .Append(VisitorFactory.Visit(expressions.Limit, visitedMembers));
                 if (expressions.Offset is not null)
                 {
                     _ = finalSql
                         .Append(" OFFSET ")
-                        .Append(_expressionVisitorFactory.Visit(expressions.Offset, visitedMembers));
+                        .Append(VisitorFactory.Visit(expressions.Offset, visitedMembers));
                 }
             } else if (expressions.Offset is not null)
             {
                 _ = finalSql
                     .AppendNewLine("LIMIT -1 OFFSET ")
-                    .Append(_expressionVisitorFactory.Visit(expressions.Offset, visitedMembers));
+                    .Append(VisitorFactory.Visit(expressions.Offset, visitedMembers));
             }
 
             _ = finalSql.Append(")");

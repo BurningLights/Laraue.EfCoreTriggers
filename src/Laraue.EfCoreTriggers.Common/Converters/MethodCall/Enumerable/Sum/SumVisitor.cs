@@ -11,8 +11,8 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable.Sum;
-internal class SumVisitor(IExpressionVisitorFactory visitorFactory, IDbSchemaRetriever schemaRetriever, ISqlGenerator sqlGenerator, ISelectTranslator selectTranslator) : 
-    BaseEnumerableVisitor(visitorFactory, schemaRetriever, sqlGenerator, selectTranslator)
+internal class SumVisitor(IExpressionVisitorFactory visitorFactory, ISqlGenerator sqlGenerator, ISelectTranslator selectTranslator) : 
+    BaseEnumerableVisitor(visitorFactory, sqlGenerator, selectTranslator)
 {
     protected override string MethodName => nameof(System.Linq.Enumerable.Sum);
 
