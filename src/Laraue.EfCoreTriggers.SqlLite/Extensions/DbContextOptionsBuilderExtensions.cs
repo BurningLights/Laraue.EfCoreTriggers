@@ -91,7 +91,8 @@ namespace Laraue.EfCoreTriggers.SqlLite.Extensions
                 .AddMethodCallConverter<MathFloorVisitor>()
                 .AddMemberAccessConverter<UtcNowVisitor>()
                 .AddMemberAccessConverter<NowVisitor>()
-                .AddMethodCallConverter<DateOnlyFromDateTimeVisitor>();
+                .AddMethodCallConverter<DateOnlyFromDateTimeVisitor>()
+                .AddMethodCallConverter<DateOnlyAddDaysVisitor>();
         }
     }
 }

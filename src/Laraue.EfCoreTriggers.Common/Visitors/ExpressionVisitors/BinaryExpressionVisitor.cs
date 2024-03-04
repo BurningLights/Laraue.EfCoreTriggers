@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using Laraue.EfCoreTriggers.Common.CSharpMethods;
 using Laraue.EfCoreTriggers.Common.SqlGeneration;
 
@@ -126,7 +128,25 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
 
                     return sqlBuilder;
                 }
+
+                // Check for realtions or models being equal
+                if (binaryExpressionParts[0] is MemberExpression mem0 && mem0.Expression is not null &&
+                    _schemaRetriever.IsRelation(mem0.Expression.Type, mem0.Member))
+                {
+                    return RelationEqual(mem0, binaryExpressionParts[1], expression.NodeType, visitedMembers);
+                }
+                else if (binaryExpressionParts[1] is MemberExpression mem1 && mem1.Expression is not null &&
+                    _schemaRetriever.IsRelation(mem1.Expression.Type, mem1.Member))
+                {
+                    return RelationEqual(mem1, binaryExpressionParts[0], expression.NodeType, visitedMembers);
+                }
+                else if (_schemaRetriever.IsModel(binaryExpressionParts[0].Type))
+                {
+                    return ModelsEqual(binaryExpressionParts[0], binaryExpressionParts[1], expression.NodeType, visitedMembers);
+                }
+
             }
+
 
             var binaryParts = binaryExpressionParts
                 .Select(part => 
@@ -151,6 +171,45 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
             if (expression.Right is MemberExpression rightMemberExpression && rightMemberExpression.Type == typeof(bool))
                 parts[1] = Expression.IsTrue(expression.Right);
             return parts;
+        }
+
+        private SqlBuilder ModelsEqual(Expression left, Expression right, ExpressionType expressionType, VisitedMembers visitedMembers)
+        {
+            // Cannot be equal if both not same type
+            if (left.Type != right.Type)
+            {
+                return _factory.Visit(Expression.Constant(false), visitedMembers);
+            }
+
+            PropertyInfo[] primaryKeys = _schemaRetriever.GetPrimaryKeyMembers(left.Type);
+            return _factory.Visit(primaryKeys.Select(
+                key => Expression.MakeBinary(
+                    expressionType,
+                    Expression.MakeMemberAccess(left, key),
+                    Expression.MakeMemberAccess(right, key))).Aggregate(
+                        (expr1, expr2) => Expression.And(expr1, expr2)), visitedMembers);
+        }
+
+
+        private SqlBuilder RelationEqual(MemberExpression member, Expression value, ExpressionType expressionType, VisitedMembers visitedMembers)
+        {
+            // Cannot be equal if both not same type
+            if (member.Type != value.Type)
+            {
+                return _factory.Visit(Expression.Constant(false), visitedMembers);
+            }
+            if (member.Expression is null)
+            {
+                throw new ArgumentException("The Expression property of member cannot be null.");
+            }
+
+            KeyInfo[] keyInfos = _schemaRetriever.GetForeignKeyMembers(member.Expression.Type, member.Type);
+            return _factory.Visit(keyInfos.Select(
+                key => Expression.MakeBinary(
+                    expressionType,
+                    Expression.MakeMemberAccess(member.Expression, key.ForeignKey),
+                    Expression.MakeMemberAccess(value, key.PrincipalKey))).Aggregate(
+                        (expr1, expr2) => Expression.And(expr1, expr2)), visitedMembers);
         }
     }
 }

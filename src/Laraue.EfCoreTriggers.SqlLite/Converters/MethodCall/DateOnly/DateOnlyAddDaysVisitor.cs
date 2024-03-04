@@ -14,7 +14,13 @@ public class DateOnlyAddDaysVisitor(IExpressionVisitorFactory visitorFactory) : 
         Expression dateOnly = expression.Object;
         Expression argument = expression.Arguments[0];
         SqlBuilder dateSql = VisitorFactory.Visit(dateOnly, visitedMembers);
-        SqlBuilder argumentSql = VisitorFactory.Visit(argument, visitedMembers);
-        return SqlBuilder.FromString($"date({dateSql}, CAST({argumentSql} AS TEXT) || ' days')");
+        SqlBuilder argumentSql = VisitorFactory.Visit(
+            Expression.Call(
+                typeof(string).GetMethod(nameof(string.Concat), [typeof(string), typeof(string)]),
+                Expression.Call(argument, typeof(int).GetMethod(nameof(int.ToString), [])), 
+                Expression.Constant(" days")), 
+            visitedMembers);
+
+        return SqlBuilder.FromString($"date({dateSql}, {argumentSql})");
     }
 }

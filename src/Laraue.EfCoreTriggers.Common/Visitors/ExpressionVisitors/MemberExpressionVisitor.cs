@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -7,6 +8,7 @@ using Laraue.EfCoreTriggers.Common.Converters.MemberAccess;
 using Laraue.EfCoreTriggers.Common.SqlGeneration;
 using Laraue.EfCoreTriggers.Common.TriggerBuilders;
 using Laraue.EfCoreTriggers.Common.TriggerBuilders.TableRefs;
+using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
 namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
 {
@@ -16,12 +18,15 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
     {
         private readonly ISqlGenerator _generator;
         private readonly IEnumerable<IMemberAccessVisitor> _staticMembersVisitors;
+        private readonly IExpressionVisitorFactory _visitorFactory;
     
         /// <inheritdoc />
-        public MemberExpressionVisitor(ISqlGenerator generator, IEnumerable<IMemberAccessVisitor> staticMembersVisitors)
+        public MemberExpressionVisitor(ISqlGenerator generator, IEnumerable<IMemberAccessVisitor> staticMembersVisitors,
+            IExpressionVisitorFactory visitorFactory)
         {
             _generator = generator;
             _staticMembersVisitors = staticMembersVisitors.Reverse().ToArray();
+            _visitorFactory = visitorFactory;
         }
 
         /// <inheritdoc />
@@ -81,7 +86,38 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
                 memberType = tableRefType;
                 argumentType = ArgumentType.Old;
             }
-        
+            else
+            {
+                // Multi-step table reference - turn into subquery
+                Type fieldType = ((parentMember as PropertyInfo)?.PropertyType ?? (parentMember as FieldInfo)?.FieldType) ?? 
+                    throw new NotSupportedException($"Member expression {parentMember.DeclaringType}.{parentMember.Name} is not supported");
+
+                // Table reference
+                Expression subquery = Expression.Call(
+                    Expression.Parameter(typeof(TableRef)), 
+                    typeof(TableRef).GetMethod(nameof(TableRef.Table), [])!.MakeGenericMethod(memberExpression.Type));
+                // Filter to related
+                ParameterExpression lambdaParam = Expression.Parameter(memberExpression.Type);
+                MethodInfo where = typeof(Enumerable).GetMethods().Single(
+                    m => m.Name == nameof(Enumerable.Where) && m.GetParameters().Length == 2 &&
+                    m.GetParameters()[1].ParameterType.GetGenericTypeDefinition() == typeof(Func<,>)).MakeGenericMethod(memberExpression.Type);
+                MethodInfo select = typeof(Enumerable).GetMethods().Single(
+                    m => m.Name == nameof(Enumerable.Select) && m.GetParameters().Length == 2 &&
+                    m.GetParameters()[1].ParameterType.GetGenericTypeDefinition() == typeof(Func<,>)).MakeGenericMethod(memberExpression.Type, fieldType);
+                MethodInfo first = typeof(Enumerable).GetMethods().Single(
+                    m => m.Name == nameof(Enumerable.First) && m.GetParameters().Length == 1).MakeGenericMethod(fieldType);
+
+                subquery = Expression.Call(
+                    null, where, subquery, Expression.Lambda(Expression.Equal(memberExpression, lambdaParam), lambdaParam));
+                // Select proper value
+                subquery = Expression.Call(
+                    null, select, subquery, Expression.Lambda(Expression.MakeMemberAccess(lambdaParam, parentMember), lambdaParam));
+                // Limit to 1
+                subquery = Expression.Call(null, first, subquery);
+
+                return _visitorFactory.Visit(subquery, visitedMembers);
+            }
+
             visitedMembers.AddMember(argumentType, parentMember);
         
             return GetColumnSql(memberType, parentMember, argumentType);

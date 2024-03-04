@@ -123,5 +123,9 @@ namespace Laraue.EfCoreTriggers.Common.SqlGeneration
 
             return columnType.FindAnnotation("ProviderClrType")?.Value as Type ?? columnType.ClrType;
         }
+
+        /// <inheritdoc />
+        public bool IsRelation(Type entity, MemberInfo memberInfo) => 
+            IsModel(entity) && GetEntityType(entity).FindNavigation(memberInfo) is not null;
     }
 }

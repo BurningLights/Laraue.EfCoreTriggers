@@ -34,6 +34,13 @@ namespace Laraue.EfCoreTriggers.Common.SqlGeneration
         bool IsModel(Type entity);
     
         /// <summary>
+        /// Checks whether the provided member is a relation on a model type
+        /// </summary>
+        /// <param name="memberInfo"></param>
+        /// <returns></returns>
+        bool IsRelation(Type entity, MemberInfo memberInfo);
+
+        /// <summary>
         /// Return schema name for the passed entity if it is exists.
         /// </summary>
         /// <param name="entity"></param>

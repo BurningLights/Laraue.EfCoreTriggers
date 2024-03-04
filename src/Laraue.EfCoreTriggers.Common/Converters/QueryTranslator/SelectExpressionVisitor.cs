@@ -45,7 +45,6 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
     {
         Expression updatedExpression = base.VisitMethodCall(node);
 
-        Debugger.Launch();
         if (updatedExpression is MethodCallExpression methodCallExpression)
         {
             if (methodCallExpression.Method.MethodMatches(typeof(Enumerable), nameof(Enumerable.Where), 2))
@@ -72,6 +71,18 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
                 {
                     translation.AddWhere(methodCallExpression.Arguments[1]);
                 }
+            }
+            else if (methodCallExpression.Method.MethodMatches(typeof(Enumerable), nameof(Enumerable.Select), 2))
+            {
+                translation.Select = methodCallExpression.Arguments[1];
+            }
+            else if (methodCallExpression.Method.MethodMatches(typeof(Enumerable), nameof(Enumerable.First), 1, 2))
+            {
+                if (methodCallExpression.Arguments.Count > 1)
+                {
+                    translation.AddWhere(methodCallExpression.Arguments[1]);
+                }
+                translation.Limit = Expression.Constant(1);
             }
             else if (methodCallExpression.Method.MethodMatches(typeof(TableRef), nameof(TableRef.Table)) &&
                 _schemaRetriever.IsModel(methodCallExpression.Method.GetGenericArguments()[0]))
@@ -163,8 +174,7 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
             {
                 JoinCandidates.Add(parameterExpression);
             }
-            else if (parameterExpression.Type.GetInterfaces().Any(
-                t => t.IsGenericType && t.GetGenericTypeDefinition().IsAssignableTo(typeof(ITableRef<>))))
+            else if (parameterExpression.Type.IsAssignableTo(typeof(TableRef)))
             {
                 // Table ref is valid parameter
             }
