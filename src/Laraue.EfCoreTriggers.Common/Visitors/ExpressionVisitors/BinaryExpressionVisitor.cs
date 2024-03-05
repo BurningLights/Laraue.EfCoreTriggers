@@ -14,7 +14,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
         private readonly IExpressionVisitorFactory _factory;
         private readonly ISqlGenerator _generator;
         private readonly IDbSchemaRetriever _schemaRetriever;
-    
+
         /// <inheritdoc />
         public BinaryExpressionVisitor(
             IExpressionVisitorFactory factory,
@@ -31,11 +31,11 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
             BinaryExpression expression,
             VisitedMembers visitedMembers)
         {
-            if (expression is 
+            if (expression is
                 {
                     Left: UnaryExpression
                     {
-                        NodeType: ExpressionType.Convert, 
+                        NodeType: ExpressionType.Convert,
                         Operand: MemberExpression memberExpression
                     },
                     Right: ConstantExpression constantExpression
@@ -45,19 +45,19 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
                 var clrType = _schemaRetriever.GetActualClrType(
                     memberExpression.Member.DeclaringType,
                     memberExpression.Member);
-            
+
                 if (memberExpression.Type.IsEnum && clrType == typeof(string))
                 {
                     var valueName = Enum.GetValues(memberExpression.Type)
                         .Cast<object>()
                         .First(x => (int)x == (int)constantExpression.Value!)
                         .ToString()!;
-                
+
                     var sb = _factory.Visit(memberExpression, visitedMembers);
                     sb.Append($" = {_generator.GetSql(valueName)}");
                     return sb;
                 }
-            
+
                 // Convert(charValue, Int32) == 122 -> charValue == 'z'
                 if (memberExpression.Type == typeof(char))
                 {
@@ -69,7 +69,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
                         .Append(constantSql);
                 }
             }
-        
+
             if (expression.Method?.Name == nameof(string.Concat))
             {
                 return _factory.Visit(
@@ -82,12 +82,12 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
             }
 
             var binaryExpressionParts = GetBinaryExpressionParts(expression);
-        
+
             if (expression.NodeType == ExpressionType.Coalesce)
             {
                 var methodInfo = typeof(BinaryFunctions).GetMethod(nameof(BinaryFunctions.Coalesce))!
                     .MakeGenericMethod(binaryExpressionParts[0].Type);
-            
+
                 var methodCall = Expression.Call(
                     null,
                     methodInfo,
@@ -103,18 +103,18 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
                 if (binaryExpressionParts.Any(x => x is ConstantExpression { Value: null }))
                 {
                     var secondArgument = binaryExpressionParts
-                        .First(x => 
+                        .First(x =>
                             x is ConstantExpression { Value: null });
-                
+
                     var firstArgument = binaryExpressionParts
                         .Except(new[] { secondArgument })
                         .First();
-                
+
                     var argumentsSql = new[] { firstArgument, secondArgument }
-                        .Select(part => 
+                        .Select(part =>
                             _factory.Visit(part, visitedMembers))
                         .ToArray();
-                
+
                     var sqlBuilder = new SqlBuilder()
                         .Append(argumentsSql[0])
                         .Append(" IS ");
@@ -130,15 +130,21 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
                 }
 
                 // Check for realtions or models being equal
-                if (binaryExpressionParts[0] is MemberExpression mem0 && mem0.Expression is not null &&
-                    _schemaRetriever.IsRelation(mem0.Expression.Type, mem0.Member))
+                // TODO: When both are relation member expressions, compare the IDs for both
+                if (IsRelationExpression(binaryExpressionParts[0]) && IsRelationExpression(binaryExpressionParts[1]))
                 {
-                    return RelationEqual(mem0, binaryExpressionParts[1], expression.NodeType, visitedMembers);
+                    return RelationEqual((MemberExpression)binaryExpressionParts[0], (MemberExpression)binaryExpressionParts[1],
+                        expression.NodeType, visitedMembers);
                 }
-                else if (binaryExpressionParts[1] is MemberExpression mem1 && mem1.Expression is not null &&
-                    _schemaRetriever.IsRelation(mem1.Expression.Type, mem1.Member))
+                if (IsRelationExpression(binaryExpressionParts[0]))
                 {
-                    return RelationEqual(mem1, binaryExpressionParts[0], expression.NodeType, visitedMembers);
+                    return RelationEqual((MemberExpression)binaryExpressionParts[0], binaryExpressionParts[1], expression.NodeType, 
+                        visitedMembers);
+                }
+                else if (IsRelationExpression(binaryExpressionParts[1]))
+                {
+                    return RelationEqual((MemberExpression)binaryExpressionParts[1], binaryExpressionParts[0], expression.NodeType, 
+                        visitedMembers);
                 }
                 else if (_schemaRetriever.IsModel(binaryExpressionParts[0].Type))
                 {
@@ -149,12 +155,12 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
 
 
             var binaryParts = binaryExpressionParts
-                .Select(part => 
+                .Select(part =>
                     _factory.Visit(
                         part,
                         visitedMembers))
                 .ToArray();
-        
+
             var leftArgument = binaryParts[0];
             var rightArgument = binaryParts[1];
 
@@ -173,30 +179,48 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
             return parts;
         }
 
+        private bool IsRelationExpression(Expression expression) =>
+            expression is MemberExpression mem && mem.Expression is not null &&
+            _schemaRetriever.IsRelation(mem.Expression.Type, mem.Member);
+
+        private static BinaryExpression JoinKeyComparison(BinaryExpression left, BinaryExpression right,
+            ExpressionType expressionType) => expressionType switch
+            {
+                ExpressionType.Equal => Expression.And(left, right),
+                ExpressionType.NotEqual => Expression.Or(left, right),
+                _ => throw new ArgumentException("The ExpressionType must be Equal or NotEqual.")
+            };
+
+        private static bool CanCompareTypes(Expression left, Expression right) =>
+            left.Type.IsAssignableFrom(right.Type) || left.Type.IsAssignableTo(right.Type);
+
         private SqlBuilder ModelsEqual(Expression left, Expression right, ExpressionType expressionType, VisitedMembers visitedMembers)
         {
             // Cannot be equal if both not same type
-            if (left.Type != right.Type)
+            if (!CanCompareTypes(left, right))
             {
-                return _factory.Visit(Expression.Constant(false), visitedMembers);
+                throw new NotSupportedException($"Cannot compare types {left.Type} and {right.Type}.");
             }
 
-            PropertyInfo[] primaryKeys = _schemaRetriever.GetPrimaryKeyMembers(left.Type);
-            return _factory.Visit(primaryKeys.Select(
+            PropertyInfo[] leftPrimaryKeys = _schemaRetriever.GetPrimaryKeyMembers(left.Type);
+            PropertyInfo[] rightPrimarykeys = _schemaRetriever.GetPrimaryKeyMembers(right.Type);
+            return !leftPrimaryKeys.OrderBy(p => p.Name).SequenceEqual(rightPrimarykeys.OrderBy(p => p.Name))
+                ? throw new NotSupportedException($"Cannot compare models with different primary keys {left.Type} and {right.Type}.")
+                : _factory.Visit(leftPrimaryKeys.Select(
                 key => Expression.MakeBinary(
                     expressionType,
                     Expression.MakeMemberAccess(left, key),
                     Expression.MakeMemberAccess(right, key))).Aggregate(
-                        (expr1, expr2) => Expression.And(expr1, expr2)), visitedMembers);
+                        (expr1, expr2) => JoinKeyComparison(expr1, expr2, expressionType)), visitedMembers);
         }
 
 
         private SqlBuilder RelationEqual(MemberExpression member, Expression value, ExpressionType expressionType, VisitedMembers visitedMembers)
         {
             // Cannot be equal if both not same type
-            if (member.Type != value.Type)
+            if (!CanCompareTypes(member, value))
             {
-                return _factory.Visit(Expression.Constant(false), visitedMembers);
+                throw new NotSupportedException($"Cannot compare types {member.Type} and {value.Type}.");
             }
             if (member.Expression is null)
             {
@@ -209,7 +233,39 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
                     expressionType,
                     Expression.MakeMemberAccess(member.Expression, key.ForeignKey),
                     Expression.MakeMemberAccess(value, key.PrincipalKey))).Aggregate(
-                        (expr1, expr2) => Expression.And(expr1, expr2)), visitedMembers);
+                        (expr1, expr2) => JoinKeyComparison(expr1, expr2, expressionType)), visitedMembers);
+        }
+
+        private SqlBuilder RelationEqual(MemberExpression left, MemberExpression right, ExpressionType expressionType,
+            VisitedMembers visitedMembers)
+        {
+            // Cannot be equal if both not same type
+            if (!CanCompareTypes(left, right))
+            {
+                throw new NotSupportedException($"Cannot compare types {left.Type} and {right.Type}.");
+            }
+            if (left.Expression is not null && _schemaRetriever.IsRelation(left.Expression.Type, left.Member) &&
+                right.Expression is not null && _schemaRetriever.IsRelation(right.Expression.Type, right.Member))
+            {
+                // Ensure the foreign key relationship on each item maps to the same key fields on the target
+                // Otherwise, cannot shortcut using the foreign key id values
+                KeyInfo[] leftForeignKeys = _schemaRetriever.GetForeignKeyMembers(left.Expression.Type, left.Type);
+                KeyInfo[] rightForeignKeys = _schemaRetriever.GetForeignKeyMembers(right.Expression.Type, right.Type);
+                return leftForeignKeys.Select(k => k.PrincipalKey).OrderBy(m => m.Name).SequenceEqual(
+                    rightForeignKeys.Select(k => k.PrincipalKey).OrderBy(m => m.Name))
+                    ? _factory.Visit(leftForeignKeys.Select(k => k.ForeignKey).Zip(
+                        rightForeignKeys.Select(k => k.ForeignKey)).Select(keys =>
+                            Expression.MakeBinary(expressionType, Expression.MakeMemberAccess(left.Expression, keys.First),
+                                Expression.MakeMemberAccess(right.Expression, keys.Second))).Aggregate(
+                        (expr1, expr2) => JoinKeyComparison(expr1, expr2, expressionType)), visitedMembers)
+                    : RelationEqual(left, (Expression)right, expressionType, visitedMembers);
+            }
+            else
+            {
+                return left.Expression is not null
+                    ? RelationEqual(left, (Expression)right, expressionType, visitedMembers)
+                    : RelationEqual(right, (Expression)left, expressionType, visitedMembers);
+            }
         }
     }
 }
