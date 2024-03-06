@@ -196,21 +196,19 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
 
         private SqlBuilder ModelsEqual(Expression left, Expression right, ExpressionType expressionType, VisitedMembers visitedMembers)
         {
-            // Cannot be equal if both not same type
-            if (!CanCompareTypes(left, right))
+            // Cannot be equal if model types are not compatible
+            if (!_schemaRetriever.ModelsAreCompatible(left.Type, right.Type))
             {
                 throw new NotSupportedException($"Cannot compare types {left.Type} and {right.Type}.");
             }
 
             PropertyInfo[] leftPrimaryKeys = _schemaRetriever.GetPrimaryKeyMembers(left.Type);
-            PropertyInfo[] rightPrimarykeys = _schemaRetriever.GetPrimaryKeyMembers(right.Type);
-            return !leftPrimaryKeys.OrderBy(p => p.Name).SequenceEqual(rightPrimarykeys.OrderBy(p => p.Name))
-                ? throw new NotSupportedException($"Cannot compare models with different primary keys {left.Type} and {right.Type}.")
-                : _factory.Visit(leftPrimaryKeys.Select(
+            PropertyInfo[] rightPrimaryKeys = _schemaRetriever.GetPrimaryKeyMembers(right.Type);
+            return _factory.Visit(leftPrimaryKeys.Zip(rightPrimaryKeys).Select(
                 key => Expression.MakeBinary(
                     expressionType,
-                    Expression.MakeMemberAccess(left, key),
-                    Expression.MakeMemberAccess(right, key))).Aggregate(
+                    Expression.MakeMemberAccess(left, key.First),
+                    Expression.MakeMemberAccess(right, key.Second))).Aggregate(
                         (expr1, expr2) => JoinKeyComparison(expr1, expr2, expressionType)), visitedMembers);
         }
 
@@ -218,7 +216,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
         private SqlBuilder RelationEqual(MemberExpression member, Expression value, ExpressionType expressionType, VisitedMembers visitedMembers)
         {
             // Cannot be equal if both not same type
-            if (!CanCompareTypes(member, value))
+            if (!_schemaRetriever.ModelsAreCompatible(member.Type, value.Type))
             {
                 throw new NotSupportedException($"Cannot compare types {member.Type} and {value.Type}.");
             }
@@ -240,7 +238,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
             VisitedMembers visitedMembers)
         {
             // Cannot be equal if both not same type
-            if (!CanCompareTypes(left, right))
+            if (!_schemaRetriever.ModelsAreCompatible(left.Type, right.Type))
             {
                 throw new NotSupportedException($"Cannot compare types {left.Type} and {right.Type}.");
             }

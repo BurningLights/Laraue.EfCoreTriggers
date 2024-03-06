@@ -41,6 +41,14 @@ namespace Laraue.EfCoreTriggers.Common.SqlGeneration
         bool IsRelation(Type entity, MemberInfo memberInfo);
 
         /// <summary>
+        /// Checks whether the primary keys are the same for two model types
+        /// </summary>
+        /// <param name="entity1"></param>
+        /// <param name="entity2"></param>
+        /// <returns></returns>
+        bool ModelsAreCompatible(Type entity1, Type entity2);
+
+        /// <summary>
         /// Return schema name for the passed entity if it is exists.
         /// </summary>
         /// <param name="entity"></param>

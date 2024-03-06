@@ -127,5 +127,12 @@ namespace Laraue.EfCoreTriggers.Common.SqlGeneration
         /// <inheritdoc />
         public bool IsRelation(Type entity, MemberInfo memberInfo) => 
             IsModel(entity) && GetEntityType(entity).FindNavigation(memberInfo) is not null;
+
+        /// <inheritdoc/>
+        public bool ModelsAreCompatible(Type entity1, Type entity2) => 
+            IsModel(entity1) && (entity1 == entity2 || (IsModel(entity2) && (
+                entity1.IsAssignableFrom(entity2) || entity2.IsAssignableFrom(entity1)) &&
+                GetPrimaryKeyMembers(entity1).OrderBy(m => m.Name).SequenceEqual(
+                    GetPrimaryKeyMembers(entity2).OrderBy(m => m.Name))));
     }
 }
