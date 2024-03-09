@@ -34,7 +34,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.SetExpressionVisitors
         public Dictionary<MemberInfo, SqlBuilder> Visit(MemberInitExpression expression, VisitedMembers visitedMembers)
         {
             Dictionary<MemberInfo, SqlBuilder> assignments = [];
-            Debugger.Launch();
+
             foreach(MemberBinding memberBinding in expression.Bindings)
             {
                 var memberAssignmentExpression = (MemberAssignment)memberBinding;

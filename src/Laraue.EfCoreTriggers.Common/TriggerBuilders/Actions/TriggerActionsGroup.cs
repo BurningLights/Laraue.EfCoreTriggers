@@ -92,7 +92,24 @@ namespace Laraue.EfCoreTriggers.Common.TriggerBuilders.Actions
 
             return this;
         }
-    
+
+        /// <summary>
+        /// Performs inserting of multiple new entities in the target table.
+        /// </summary>
+        /// <param name="insertExpression">
+        /// Expression to make the insert
+        /// e.g (tableRefs) => tableRefs.Table<Table>().Select(new Table { Value = tableRefs.NEW.Value })
+        /// </param>
+        /// <typeparam name="TInsertEntity"></typeparam>
+        /// <returns></returns>
+        public TriggerActionsGroup<TTriggerEntity, TTriggerEntityRefs> Insert<TInsertEntity>(
+            Expression<Func<TTriggerEntityRefs, IEnumerable<TInsertEntity>>> insertExpression)
+        {
+            AddAction(new TriggerInsertAction(insertExpression));
+
+            return this;
+        }
+
         /// <summary>
         /// Performs deleting of the entities from the target table satisfied to the passed predicate. 
         /// </summary>

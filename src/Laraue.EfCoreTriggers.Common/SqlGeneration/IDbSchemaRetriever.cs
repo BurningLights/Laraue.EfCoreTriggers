@@ -78,6 +78,16 @@ namespace Laraue.EfCoreTriggers.Common.SqlGeneration
         KeyInfo[] GetForeignKeyMembers(Type type, Type type2);
 
         /// <summary>
+        /// Determines whether accessing the primary key of the related entity can be shortcuted by using the foreign key id
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="relation"></param>
+        /// <param name="foreignKeys"></param>
+        /// <param name="relationPrimarykeys"></param>
+        /// <returns></returns>
+        bool CanShortcutRelation(Type entity, Type relation, out KeyInfo[] foreignKeys, out MemberInfo[] relationPrimarykeys);
+
+        /// <summary>
         /// Some type can be overriden, for example Enum can be store as string in the DB.
         /// In these cases clr type will be returned from this function.
         /// </summary>

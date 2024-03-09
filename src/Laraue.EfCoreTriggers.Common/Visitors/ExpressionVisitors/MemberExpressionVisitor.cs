@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Numerics;
 using System.Reflection;
 using Laraue.EfCoreTriggers.Common.Converters.MemberAccess;
+using Laraue.EfCoreTriggers.Common.Extensions;
 using Laraue.EfCoreTriggers.Common.SqlGeneration;
 using Laraue.EfCoreTriggers.Common.TriggerBuilders;
 using Laraue.EfCoreTriggers.Common.TriggerBuilders.TableRefs;
@@ -19,14 +21,16 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
         private readonly ISqlGenerator _generator;
         private readonly IEnumerable<IMemberAccessVisitor> _staticMembersVisitors;
         private readonly IExpressionVisitorFactory _visitorFactory;
+        private readonly IDbSchemaRetriever _schemaRetriever;
     
         /// <inheritdoc />
         public MemberExpressionVisitor(ISqlGenerator generator, IEnumerable<IMemberAccessVisitor> staticMembersVisitors,
-            IExpressionVisitorFactory visitorFactory)
+            IExpressionVisitorFactory visitorFactory, IDbSchemaRetriever schemaRetriever)
         {
             _generator = generator;
             _staticMembersVisitors = staticMembersVisitors.Reverse().ToArray();
             _visitorFactory = visitorFactory;
+            _schemaRetriever = schemaRetriever;
         }
 
         /// <inheritdoc />
@@ -60,12 +64,37 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
             // Table
             if (memberExpression.Member.TryGetNewTableRef(out _))
             {
-                return _generator.NewEntityPrefix;
+                MemberInfo[] primaryKeys = _schemaRetriever.GetPrimaryKeyMembers(memberExpression.Type);
+                return primaryKeys.Length == 1
+                    ? GetColumnSql(memberExpression.Type, primaryKeys[0], ArgumentType.New)
+                    : throw new NotSupportedException($"Cannot translate reference {memberExpression} with compound primary key.");
             }
-        
-            return memberExpression.Member.TryGetOldTableRef(out _)
-                ? _generator.OldEntityPrefix
-                : GetColumnSql(memberExpression.Expression.Type, memberExpression.Member, argumentType);
+            else if (memberExpression.Member.TryGetOldTableRef(out _))
+            {
+                MemberInfo[] primaryKeys = _schemaRetriever.GetPrimaryKeyMembers(memberExpression.Type);
+                return primaryKeys.Length == 1
+                    ? GetColumnSql(memberExpression.Type, primaryKeys[0], ArgumentType.Old)
+                    : throw new NotSupportedException($"Cannot translate reference {memberExpression} with compound primary key.");
+            }
+            else if (_schemaRetriever.IsRelation(memberExpression.Expression.Type, memberExpression.Member))
+            {
+                return CanShortcut(memberExpression.Expression.Type, memberExpression.Member.GetResultType(), out KeyInfo[] foreignKeys, out MemberInfo[] primaryKeys)
+                    ? GetColumnSql(memberExpression.Expression.Type, foreignKeys[0].ForeignKey, argumentType) :
+                    GetColumnSql(memberExpression, primaryKeys[0], visitedMembers);
+            }
+            else
+            {
+                return GetColumnSql(memberExpression.Expression.Type, memberExpression.Member, argumentType);
+            }
+        }
+
+        private bool CanShortcut(Type tableType, Type relationType, out KeyInfo[] foreignKeys, out MemberInfo[] primaryKeys)
+        {
+            bool result = _schemaRetriever.CanShortcutRelation(tableType, relationType, out foreignKeys, out primaryKeys);
+
+            return primaryKeys.Length != 1
+                ? throw new NotSupportedException($"Cannot translate relation with compound primary key {string.Join<MemberInfo>(", ", primaryKeys)}. Refer to the individual key columns instead.")
+                : result;
         }
 
         private string GetColumnSql(
@@ -86,15 +115,22 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
                 memberType = tableRefType;
                 argumentType = ArgumentType.Old;
             }
-            else
+            
+            if (_schemaRetriever.IsRelation(memberExpression.Type, parentMember))
             {
-                // Multi-step table reference - turn into subquery
-                Type fieldType = ((parentMember as PropertyInfo)?.PropertyType ?? (parentMember as FieldInfo)?.FieldType) ?? 
-                    throw new NotSupportedException($"Member expression {parentMember.DeclaringType}.{parentMember.Name} is not supported");
-
+                // Multi-step or NEW/OLD table reference ending in relation - use key reference if foreign key uses primary key
+                return CanShortcut(memberExpression.Type, parentMember.GetResultType(), out KeyInfo[] foreignKeys, out MemberInfo[] primaryKeys)
+                    ? (string)_visitorFactory.Visit(Expression.MakeMemberAccess(memberExpression, foreignKeys[0].ForeignKey), visitedMembers)
+                    : (string)_visitorFactory.Visit(Expression.MakeMemberAccess(
+                        Expression.MakeMemberAccess(memberExpression, parentMember), primaryKeys[0]), visitedMembers);
+            }
+            else if (argumentType == ArgumentType.Default)
+            {
+                // Multi-step table reference ending in field - turn into subquery
+                Type fieldType = parentMember.GetResultType();
                 // Table reference
                 Expression subquery = Expression.Call(
-                    Expression.Parameter(typeof(TableRef)), 
+                    Expression.Constant(new TableRef()), 
                     typeof(TableRef).GetMethod(nameof(TableRef.Table), [])!.MakeGenericMethod(memberExpression.Type));
                 // Filter to related
                 ParameterExpression lambdaParam = Expression.Parameter(memberExpression.Type);

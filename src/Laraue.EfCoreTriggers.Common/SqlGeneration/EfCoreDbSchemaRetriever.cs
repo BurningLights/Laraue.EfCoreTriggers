@@ -134,5 +134,14 @@ namespace Laraue.EfCoreTriggers.Common.SqlGeneration
                 entity1.IsAssignableFrom(entity2) || entity2.IsAssignableFrom(entity1)) &&
                 GetPrimaryKeyMembers(entity1).OrderBy(m => m.Name).SequenceEqual(
                     GetPrimaryKeyMembers(entity2).OrderBy(m => m.Name))));
+        
+        /// <inheritdoc/>
+        public bool CanShortcutRelation(Type entity, Type relation, out KeyInfo[] foreignKeys, out MemberInfo[] relationPrimarykeys)
+        {
+            foreignKeys = GetForeignKeyMembers(entity, relation);
+            relationPrimarykeys = GetPrimaryKeyMembers(relation);
+            return relationPrimarykeys.Length == 1 && foreignKeys.Length == 1 && foreignKeys[0].PrincipalKey == relationPrimarykeys[0];
+
+        }
     }
 }
