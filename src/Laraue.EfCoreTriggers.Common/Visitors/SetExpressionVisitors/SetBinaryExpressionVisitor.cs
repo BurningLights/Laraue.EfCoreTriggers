@@ -15,23 +15,15 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.SetExpressionVisitors
         {
             _factory = factory;
         }
-    
-        public Dictionary<MemberInfo, SqlBuilder> Visit(BinaryExpression expression, VisitedMembers visitedMembers)
-        {
-            var sqlBuilder = _factory.Visit(expression, visitedMembers);
 
-            var member = expression.Left as MemberExpression;
-            member ??= expression.Right as MemberExpression;
+        private MemberExpression GetMember(BinaryExpression expression) =>
+            expression.Left as MemberExpression ?? expression.Right as MemberExpression ?? throw new NotSupportedException();
 
-            if (member is null)
-            {
-                throw new NotSupportedException();
-            }
-        
-            return new Dictionary<MemberInfo, SqlBuilder>()
-            {
-                [member.Member] = sqlBuilder 
-            };
-        }
+        /// <inheritdoc/>
+        public IEnumerable<MemberInfo> VisitKeys(BinaryExpression expression) => [GetMember(expression).Member];
+
+       /// <inheritdoc/>
+        public IEnumerable<SqlBuilder> VisitValues(BinaryExpression expression, VisitedMembers visitedMembers) =>
+            [_factory.Visit(expression, visitedMembers)];
     }
 }

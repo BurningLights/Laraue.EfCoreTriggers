@@ -20,9 +20,11 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.SetExpressionVisitors
         }
 
         /// <inheritdoc />
-        public Dictionary<MemberInfo, SqlBuilder> Visit(LambdaExpression expression, VisitedMembers visitedMembers)
-        {
-            return _factory.Visit(expression.Body, visitedMembers);
-        }
+        public IEnumerable<MemberInfo> VisitKeys(LambdaExpression expression) => 
+            _factory.VisitKeys(expression.Body);
+
+        /// <inheritdoc />
+        public IEnumerable<SqlBuilder> VisitValues(LambdaExpression expression, VisitedMembers visitedMembers) => 
+            _factory.VisitValues(expression.Body, visitedMembers);
     }
 }

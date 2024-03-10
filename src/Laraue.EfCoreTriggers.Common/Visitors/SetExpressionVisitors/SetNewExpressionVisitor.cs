@@ -25,16 +25,13 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.SetExpressionVisitors
         }
 
         /// <inheritdoc />
-        public Dictionary<MemberInfo, SqlBuilder> Visit(NewExpression expression, VisitedMembers visitedMembers)
-        {
-            return expression.Arguments.ToDictionary(
-                argument => ((MemberExpression)argument).Member,
-                argument =>
-                {
-                    return _visitingInfo.ExecuteWithChangingMember(
-                        ((MemberExpression)argument).Member,
-                        () => _factory.Visit(argument, visitedMembers));
-                });
-        }
+        public IEnumerable<MemberInfo> VisitKeys(NewExpression expression) => 
+            expression.Arguments.Cast<MemberExpression>().Select(memberExpression => memberExpression.Member);
+
+        /// <inheritdoc />
+        public IEnumerable<SqlBuilder> VisitValues(NewExpression expression, VisitedMembers visitedMembers) =>
+            expression.Arguments.Cast<MemberExpression>().Select(memberExpression => _visitingInfo.ExecuteWithChangingMember(
+                memberExpression.Member, () => _factory.Visit(memberExpression, visitedMembers)));
+
     }
 }

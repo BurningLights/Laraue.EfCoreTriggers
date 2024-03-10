@@ -33,12 +33,43 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.SetExpressionVisitors
                 _ => throw new NotSupportedException($"Expression of type {expression.GetType()} is not supported")
             };
         }
-    
-        private Dictionary<MemberInfo, SqlBuilder> Visit<TExpression>(TExpression expression, VisitedMembers visitedMembers)
-            where TExpression : Expression
+
+        /// <inheritdoc />
+        public IEnumerable<MemberInfo> VisitKeys(Expression expression)
         {
-            return _serviceProvider.GetRequiredService<IMemberInfoVisitor<TExpression>>()
-                .Visit(expression, visitedMembers);
+            return expression switch
+            {
+                LambdaExpression lambdaExpression => VisitKeys(lambdaExpression),
+                MemberInitExpression memberInitExpression => VisitKeys(memberInitExpression),
+                NewExpression newExpression => VisitKeys(newExpression),
+                BinaryExpression binaryExpression => VisitKeys(binaryExpression),
+                _ => throw new NotSupportedException($"Expression of type {expression.GetType()} is not supported")
+            };
         }
+
+        /// <inheritdoc />
+        public IEnumerable<SqlBuilder> VisitValues(Expression expression, VisitedMembers visitedMembers)
+        {
+            return expression switch
+            {
+                LambdaExpression lambdaExpression => VisitValues(lambdaExpression, visitedMembers),
+                MemberInitExpression memberInitExpression => VisitValues(memberInitExpression, visitedMembers),
+                NewExpression newExpression => VisitValues(newExpression, visitedMembers),
+                BinaryExpression binaryExpression => VisitValues(binaryExpression, visitedMembers),
+                _ => throw new NotSupportedException($"Expression of type {expression.GetType()} is not supported")
+            };
+        }
+
+        private Dictionary<MemberInfo, SqlBuilder> Visit<TExpression>(TExpression expression, VisitedMembers visitedMembers)
+            where TExpression : Expression => _serviceProvider.GetRequiredService<IMemberInfoVisitor<TExpression>>()
+                .Visit(expression, visitedMembers);
+
+        private IEnumerable<MemberInfo> VisitKeys<TExpression>(TExpression expression)
+            where TExpression : Expression => _serviceProvider.GetRequiredService<IMemberInfoVisitor<TExpression>>()
+                .VisitKeys(expression);
+
+        private IEnumerable<SqlBuilder> VisitValues<TExpression>(TExpression expression, VisitedMembers visitedMembers)
+            where TExpression : Expression => _serviceProvider.GetRequiredService<IMemberInfoVisitor<TExpression>>()
+                .VisitValues(expression, visitedMembers);
     }
 }

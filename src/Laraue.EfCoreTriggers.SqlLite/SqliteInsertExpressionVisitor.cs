@@ -2,6 +2,7 @@
 using System.Linq.Expressions;
 using Laraue.EfCoreTriggers.Common.SqlGeneration;
 using Laraue.EfCoreTriggers.Common.TriggerBuilders;
+using Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors;
 using Laraue.EfCoreTriggers.Common.Visitors.SetExpressionVisitors;
 using Laraue.EfCoreTriggers.Common.Visitors.TriggerVisitors.Statements;
 
@@ -17,8 +18,9 @@ public sealed class SqliteInsertExpressionVisitor : InsertExpressionVisitor
     public SqliteInsertExpressionVisitor(
         IMemberInfoVisitorFactory factory,
         IDbSchemaRetriever adapter,
-        ISqlGenerator sqlGenerator) 
-        : base(factory, sqlGenerator)
+        ISqlGenerator sqlGenerator,
+        IExpressionVisitorFactory visitorFactory) 
+        : base(factory, sqlGenerator, visitorFactory)
     {
         _adapter = adapter;
         _sqlGenerator = sqlGenerator;

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using Laraue.EfCoreTriggers.Common.SqlGeneration;
@@ -14,6 +15,21 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.SetExpressionVisitors
         where TExpression : Expression
     {
         /// <summary>
+        /// Visit passed <see cref="Expression"/> and return the members that should be set
+        /// </summary>
+        /// <param name="expression"></param>
+        /// <returns></returns>
+        IEnumerable<MemberInfo> VisitKeys(TExpression expression);
+
+        /// <summary>
+        /// Visit passed <see cref="Expression"/> and return the SQL for the member values
+        /// </summary>
+        /// <param name="expression"></param>
+        /// <param name="visitedMembers"></param>
+        /// <returns></returns>
+        IEnumerable<SqlBuilder> VisitValues(TExpression expression, VisitedMembers visitedMembers);
+
+        /// <summary>
         /// Visit passed <see cref="Expression"/> and return
         /// SQL for each of it members.
         /// </summary>
@@ -22,6 +38,6 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.SetExpressionVisitors
         /// <returns></returns>
         Dictionary<MemberInfo, SqlBuilder> Visit(
             TExpression expression,
-            VisitedMembers visitedMembers);
+            VisitedMembers visitedMembers) => VisitKeys(expression).Zip(VisitValues(expression, visitedMembers)).ToDictionary();
     }
 }
