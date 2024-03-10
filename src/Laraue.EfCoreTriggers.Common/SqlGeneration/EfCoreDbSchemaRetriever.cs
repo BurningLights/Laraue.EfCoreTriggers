@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Laraue.EfCoreTriggers.Common.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
@@ -93,27 +95,25 @@ namespace Laraue.EfCoreTriggers.Common.SqlGeneration
         }
 
         /// <inheritdoc />
-        public KeyInfo[] GetForeignKeyMembers(Type type, Type type2)
+        public KeyInfo[] GetForeignKeyMembers(Type type, MemberInfo memberInfo)
         {
-            var entityType = Model.FindEntityType(type);
-        
-            var outerForeignKey = entityType.GetForeignKeys()
-                .First(x => x.PrincipalEntityType.ClrType == type2);
+            IEntityType entityType = Model.FindEntityType(type) ?? throw new ArgumentException($"The type {type} is not a model.");
 
-            var outerKey = outerForeignKey
+            IForeignKey outerForeignKey = entityType.FindNavigation(memberInfo)?.ForeignKey 
+                ?? throw new ArgumentException($"The member {memberInfo} is not a relation.");
+
+            IReadOnlyList<IProperty> outerKey = outerForeignKey
                 .PrincipalKey
                 .Properties;
 
-            var innerKey = outerForeignKey.Properties;
+            IReadOnlyList<IProperty> innerKey = outerForeignKey.Properties;
 
-            var keys = outerKey
+            return outerKey
                 .Zip(innerKey, (first, second)
                     => new KeyInfo(
-                        first.PropertyInfo,
-                        second.PropertyInfo))
+                        first.PropertyInfo ?? throw new NotSupportedException("The key must be a property."),
+                        second.PropertyInfo ?? throw new NotSupportedException("The key must be a property.")))
                 .ToArray();
-
-            return keys;
         }
 
         /// <inheritdoc />
@@ -136,10 +136,10 @@ namespace Laraue.EfCoreTriggers.Common.SqlGeneration
                     GetPrimaryKeyMembers(entity2).OrderBy(m => m.Name))));
         
         /// <inheritdoc/>
-        public bool CanShortcutRelation(Type entity, Type relation, out KeyInfo[] foreignKeys, out MemberInfo[] relationPrimarykeys)
+        public bool CanShortcutRelation(Type entity, MemberInfo relation, out KeyInfo[] foreignKeys, out MemberInfo[] relationPrimarykeys)
         {
             foreignKeys = GetForeignKeyMembers(entity, relation);
-            relationPrimarykeys = GetPrimaryKeyMembers(relation);
+            relationPrimarykeys = GetPrimaryKeyMembers(relation.GetResultType());
             return relationPrimarykeys.Length == 1 && foreignKeys.Length == 1 && foreignKeys[0].PrincipalKey == relationPrimarykeys[0];
 
         }

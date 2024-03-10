@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using Laraue.EfCoreTriggers.Common.Converters.QueryTranslator;
+using Laraue.EfCoreTriggers.Common.Extensions;
 using Laraue.EfCoreTriggers.Common.SqlGeneration;
 using Laraue.EfCoreTriggers.Common.TriggerBuilders;
 using Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors;
@@ -17,20 +19,25 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.TriggerVisitors.Statements
         private readonly IMemberInfoVisitorFactory _factory;
         private readonly ISqlGenerator _sqlGenerator;
         private readonly IExpressionVisitorFactory _visitorFactory;
+        private readonly ISelectTranslator _selectTranslator;
 
         /// <summary>
         /// Initializes a new instance of <see cref="InsertExpressionVisitor"/>.
         /// </summary>
         /// <param name="factory"></param>
         /// <param name="sqlGenerator"></param>
+        /// <param name="visitorFactory"></param>
+        /// <param name="selectTranslator"></param>
         public InsertExpressionVisitor(
             IMemberInfoVisitorFactory factory,
             ISqlGenerator sqlGenerator,
-            IExpressionVisitorFactory visitorFactory)
+            IExpressionVisitorFactory visitorFactory,
+            ISelectTranslator selectTranslator)
         {
             _factory = factory;
             _sqlGenerator = sqlGenerator;
             _visitorFactory = visitorFactory;
+            _selectTranslator = selectTranslator;
         }
 
         /// <inheritdoc />
@@ -39,15 +46,15 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.TriggerVisitors.Statements
             IEnumerable<MemberInfo> assignmentFields;
             SqlBuilder assignmentQuery;
             Type insertType;
-            if (expression.Body.Type.IsGenericType && expression.Body.Type.GetGenericTypeDefinition().IsAssignableTo(typeof(IEnumerable<>)))
+            if (expression.Body.Type.IsIEnumerable(out Type? iEnumerableType))
             {
-                insertType = expression.Body.Type.GetGenericTypeDefinition() == typeof(IEnumerable<>)
-                    ? expression.Body.Type.GetGenericArguments()[0]
-                    : expression.Body.Type.GetInterfaces()
-                    .Single(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-                    .GetGenericArguments()[0];
-                assignmentFields = _factory.VisitKeys(((MethodCallExpression)expression.Body).Arguments[1]);
+                insertType = iEnumerableType;
+                assignmentFields = _factory.VisitKeys(_selectTranslator.Translate(expression.Body).Select ?? 
+                    throw new NotSupportedException($"Query {expression.Body} has no select clause."));
                 assignmentQuery = _visitorFactory.Visit(expression.Body, visitedMembers);
+                // Strip off the extra parenthesis
+                string selectQuery = assignmentQuery.ToString();
+                assignmentQuery = SqlBuilder.FromString(selectQuery[(selectQuery.IndexOf('(') + 1)..(selectQuery.LastIndexOf(')'))]);
             }
             else
             {

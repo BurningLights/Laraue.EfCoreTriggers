@@ -115,6 +115,7 @@ namespace Laraue.EfCoreTriggers.Common.Extensions
                 .AddExpressionVisitor<LambdaExpression, LambdaExpressionVisitor>()
                 .AddExpressionVisitor<ParameterExpression, ParameterExpressionVisitor>()
                 .AddExpressionVisitor<ConditionalExpression, ConditionalExpressionVisitor>()
+                .AddExpressionVisitor<MemberInitExpression, MemberInitExpressionVisitor>()
 
                 .AddMethodCallConverter<CountVisitor>()
                 .AddMethodCallConverter<SumVisitor>()

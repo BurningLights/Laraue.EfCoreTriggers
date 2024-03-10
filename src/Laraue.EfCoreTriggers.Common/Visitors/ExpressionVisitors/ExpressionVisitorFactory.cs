@@ -36,6 +36,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
                 LambdaExpression lambda => Visit(lambda, visitedMembers),
                 ParameterExpression parameterExpression => Visit(parameterExpression, visitedMembers),
                 ConditionalExpression conditional => Visit(conditional, visitedMembers),
+                MemberInitExpression memberInit => Visit(memberInit, visitedMembers),
                 _ => throw new NotSupportedException($"Expression of type {expression.GetType()} is not supported")
             };
         }

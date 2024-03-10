@@ -73,9 +73,9 @@ namespace Laraue.EfCoreTriggers.Common.SqlGeneration
         /// Get info about cases participating in relations between two types.
         /// </summary>
         /// <param name="type"></param>
-        /// <param name="type2"></param>
+        /// <param name="memberInfo"></param>
         /// <returns></returns>
-        KeyInfo[] GetForeignKeyMembers(Type type, Type type2);
+        KeyInfo[] GetForeignKeyMembers(Type type, MemberInfo memberInfo);
 
         /// <summary>
         /// Determines whether accessing the primary key of the related entity can be shortcuted by using the foreign key id
@@ -85,7 +85,7 @@ namespace Laraue.EfCoreTriggers.Common.SqlGeneration
         /// <param name="foreignKeys"></param>
         /// <param name="relationPrimarykeys"></param>
         /// <returns></returns>
-        bool CanShortcutRelation(Type entity, Type relation, out KeyInfo[] foreignKeys, out MemberInfo[] relationPrimarykeys);
+        bool CanShortcutRelation(Type entity, MemberInfo relation, out KeyInfo[] foreignKeys, out MemberInfo[] relationPrimarykeys);
 
         /// <summary>
         /// Some type can be overriden, for example Enum can be store as string in the DB.

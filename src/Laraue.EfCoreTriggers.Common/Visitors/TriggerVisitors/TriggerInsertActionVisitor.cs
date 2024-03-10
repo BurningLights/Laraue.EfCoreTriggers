@@ -1,4 +1,5 @@
-﻿using Laraue.EfCoreTriggers.Common.SqlGeneration;
+﻿using Laraue.EfCoreTriggers.Common.Extensions;
+using Laraue.EfCoreTriggers.Common.SqlGeneration;
 using Laraue.EfCoreTriggers.Common.TriggerBuilders.Actions;
 using Laraue.EfCoreTriggers.Common.Visitors.TriggerVisitors.Statements;
 using System;
@@ -27,12 +28,12 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.TriggerVisitors
                 triggerAction.InsertExpression,
                 visitedMembers);
 
-            Type insertEntityType = triggerAction.InsertExpression.Body.Type.IsGenericType && 
-                triggerAction.InsertExpression.Body.Type.GetGenericTypeDefinition().IsAssignableTo(typeof(IEnumerable<>))
-                ? triggerAction.InsertExpression.Body.Type.GetInterfaces().Single(
-                    i => i.GetGenericTypeDefinition() == typeof(IEnumerable<>)).GetGenericArguments()[0]
-                : triggerAction.InsertExpression.Body.Type;
-        
+            Type insertEntityType = triggerAction.InsertExpression.Body.Type;
+            if (triggerAction.InsertExpression.Body.Type.IsIEnumerable(out Type? iEnumerableType))
+            {
+                insertEntityType = iEnumerableType;
+            }
+
             var sql = SqlBuilder.FromString($"INSERT INTO {_sqlGenerator.GetTableSql(insertEntityType)} ")
                 .Append(insertStatement)
                 .Append(";");

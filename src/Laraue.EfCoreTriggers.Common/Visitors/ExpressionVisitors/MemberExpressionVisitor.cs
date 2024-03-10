@@ -78,7 +78,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
             }
             else if (_schemaRetriever.IsRelation(memberExpression.Expression.Type, memberExpression.Member))
             {
-                return CanShortcut(memberExpression.Expression.Type, memberExpression.Member.GetResultType(), out KeyInfo[] foreignKeys, out MemberInfo[] primaryKeys)
+                return CanShortcut(memberExpression.Expression.Type, memberExpression.Member, out KeyInfo[] foreignKeys, out MemberInfo[] primaryKeys)
                     ? GetColumnSql(memberExpression.Expression.Type, foreignKeys[0].ForeignKey, argumentType) :
                     GetColumnSql(memberExpression, primaryKeys[0], visitedMembers);
             }
@@ -88,9 +88,9 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
             }
         }
 
-        private bool CanShortcut(Type tableType, Type relationType, out KeyInfo[] foreignKeys, out MemberInfo[] primaryKeys)
+        private bool CanShortcut(Type tableType, MemberInfo relation, out KeyInfo[] foreignKeys, out MemberInfo[] primaryKeys)
         {
-            bool result = _schemaRetriever.CanShortcutRelation(tableType, relationType, out foreignKeys, out primaryKeys);
+            bool result = _schemaRetriever.CanShortcutRelation(tableType, relation, out foreignKeys, out primaryKeys);
 
             return primaryKeys.Length != 1
                 ? throw new NotSupportedException($"Cannot translate relation with compound primary key {string.Join<MemberInfo>(", ", primaryKeys)}. Refer to the individual key columns instead.")
@@ -119,7 +119,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
             if (_schemaRetriever.IsRelation(memberExpression.Type, parentMember))
             {
                 // Multi-step or NEW/OLD table reference ending in relation - use key reference if foreign key uses primary key
-                return CanShortcut(memberExpression.Type, parentMember.GetResultType(), out KeyInfo[] foreignKeys, out MemberInfo[] primaryKeys)
+                return CanShortcut(memberExpression.Type, parentMember, out KeyInfo[] foreignKeys, out MemberInfo[] primaryKeys)
                     ? (string)_visitorFactory.Visit(Expression.MakeMemberAccess(memberExpression, foreignKeys[0].ForeignKey), visitedMembers)
                     : (string)_visitorFactory.Visit(Expression.MakeMemberAccess(
                         Expression.MakeMemberAccess(memberExpression, parentMember), primaryKeys[0]), visitedMembers);

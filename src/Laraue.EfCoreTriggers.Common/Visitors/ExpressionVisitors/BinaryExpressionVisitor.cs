@@ -144,7 +144,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
             var rightArgument = binaryParts[1];
 
             return new SqlBuilder()
-                .Append(_generator.GetBinarySql(expression.NodeType, leftArgument, rightArgument));
+                .Append("(").Append(_generator.GetBinarySql(expression.NodeType, leftArgument, rightArgument)).Append(")");
         }
 
         private static Expression[] GetBinaryExpressionParts(BinaryExpression expression)

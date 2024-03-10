@@ -35,7 +35,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.SetExpressionVisitors
             if (_schemaRetriever.IsRelation(expression.Type, memberAssignment.Member))
             {
                 assignmentMember = _schemaRetriever.CanShortcutRelation(
-                    expression.Type, memberAssignment.Member.GetResultType(), out KeyInfo[] foreignKeys, out MemberInfo[] _)
+                    expression.Type, memberAssignment.Member, out KeyInfo[] foreignKeys, out MemberInfo[] _)
                 ? foreignKeys[0].ForeignKey : throw new NotSupportedException($"Cannot set relation {memberAssignment.Member} that does not refer to a single primary key. Set the fields instead.");
             }
 
