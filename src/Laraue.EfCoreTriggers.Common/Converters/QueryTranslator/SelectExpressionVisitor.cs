@@ -84,10 +84,25 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
                 }
                 translation.Limit = Expression.Constant(1);
             }
+            else if (methodCallExpression.Method.MethodMatches(typeof(Enumerable), nameof(Enumerable.Max), 1, 2))
+            {
+                if (methodCallExpression.Arguments.Count > 1)
+                {
+                    translation.Select = methodCallExpression.Arguments[1];
+                }
+            }
             else if (methodCallExpression.Method.MethodMatches(typeof(TableRef), nameof(TableRef.Table)) &&
                 _schemaRetriever.IsModel(methodCallExpression.Method.GetGenericArguments()[0]))
             {
                 translation.From = methodCallExpression.Method.GetGenericArguments()[0];
+            }
+            else if (methodCallExpression.Method.MethodMatches(typeof(Enumerable), nameof(Enumerable.Cast), 1) &&
+                (methodCallExpression.Type == methodCallExpression.Arguments[0].Type ||
+                    (methodCallExpression.Type.GetGenericArguments()[0].IsGenericType &&
+                        methodCallExpression.Type.GetGenericArguments()[0].GetGenericTypeDefinition() == typeof(Nullable<>) &&
+                        Nullable.GetUnderlyingType(methodCallExpression.Type.GetGenericArguments()[0]) == methodCallExpression.Arguments[0].Type.GetGenericArguments()[0])))
+            {
+                // Cast to nullable
             }
             else
             {

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -40,10 +41,12 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.TriggerVisitors.Statements
             Type insertType;
             if (expression.Body.Type.IsGenericType && expression.Body.Type.GetGenericTypeDefinition().IsAssignableTo(typeof(IEnumerable<>)))
             {
-                insertType = expression.Body.Type.GetInterfaces()
+                insertType = expression.Body.Type.GetGenericTypeDefinition() == typeof(IEnumerable<>)
+                    ? expression.Body.Type.GetGenericArguments()[0]
+                    : expression.Body.Type.GetInterfaces()
                     .Single(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                     .GetGenericArguments()[0];
-                assignmentFields = _factory.VisitKeys(expression.Body);
+                assignmentFields = _factory.VisitKeys(((MethodCallExpression)expression.Body).Arguments[1]);
                 assignmentQuery = _visitorFactory.Visit(expression.Body, visitedMembers);
             }
             else

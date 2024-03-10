@@ -5,6 +5,8 @@ using Laraue.EfCoreTriggers.Common.Converters.MethodCall.CSharpMethods;
 using Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable.Any;
 using Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable.Count;
 using Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable.First;
+using Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable.Max;
+using Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable.Select;
 using Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable.Sum;
 using Laraue.EfCoreTriggers.Common.Converters.MethodCall.Functions;
 using Laraue.EfCoreTriggers.Common.Converters.MethodCall.Int32.ToString;
@@ -118,6 +120,8 @@ namespace Laraue.EfCoreTriggers.Common.Extensions
                 .AddMethodCallConverter<SumVisitor>()
                 .AddMethodCallConverter<AnyVisitor>()
                 .AddMethodCallConverter<FirstVisitor>()
+                .AddMethodCallConverter<MaxVisitor>()
+                .AddMethodCallConverter<SelectVisitor>()
                 .AddMethodCallConverter<CoalesceVisitor>()
                 .AddMethodCallConverter<GetTableNameVisitor>()
                 .AddMethodCallConverter<GetColumnNameVisitor>()
