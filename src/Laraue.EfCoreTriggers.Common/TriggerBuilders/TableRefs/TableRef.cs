@@ -16,5 +16,12 @@ public class TableRef
     /// <typeparam name="TTable">The model type to query</typeparam>
     /// <returns></returns>
     public IEnumerable<TTable> Table<TTable>() => throw new NotImplementedException();
-    //public IEnumerable<TTable> Table<TTable>(string alias) => throw new NotImplementedException();
+    
+    /// <summary>
+    /// Create a query from a subquery
+    /// </summary>
+    /// <typeparam name="T">The return type of the subquery</typeparam>
+    /// <param name="subquery">A lambda expression definining the subquery</param>
+    /// <returns></returns>
+    public IEnumerable<T> FromSubquery<T>(Func<IEnumerable<T>> subquery) => throw new NotImplementedException();
 }

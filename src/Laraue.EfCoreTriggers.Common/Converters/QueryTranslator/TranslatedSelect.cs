@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 
 public class TranslatedSelect
 {
+    // TODO: From expression alias
     private Expression? _select;
     public Expression? Select
     {
@@ -19,15 +20,15 @@ public class TranslatedSelect
         }
     }
 
-    private Type? _from;
-    public Type? From
+    private IFromSource? _from;
+    public IFromSource? From
     {
         get => _from;
         set
         {
             if (_from is not null)
             {
-                throw new NotSupportedException("Cannot update the From type once it has been set.");
+                throw new NotSupportedException("Cannot update the From source once it has been set.");
             }
             _from = value;
         }

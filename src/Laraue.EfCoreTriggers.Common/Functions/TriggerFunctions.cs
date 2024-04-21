@@ -32,5 +32,15 @@ namespace Laraue.EfCoreTriggers.Common.Functions
         {
             throw new InvalidOperationException();
         }
+
+        /// <summary>
+        /// Creates a raw SQL snippet that is inserted into the query
+        /// </summary>
+        /// <typeparam name="T">The type returned from the snippet</typeparam>
+        /// <param name="sql">The raw SQL. Use {} to indicate where argument selectors should be inserted</param>
+        /// <param name="argumentSelectors">Strongly-typed expressions to translate to SQL and embed within the raw SQL</param>
+        /// <returns></returns>
+        public static T RawSqlSnippet<T>(string sql, params Func<object>[] argumentSelectors) => throw new NotImplementedException();
+
     }
 }

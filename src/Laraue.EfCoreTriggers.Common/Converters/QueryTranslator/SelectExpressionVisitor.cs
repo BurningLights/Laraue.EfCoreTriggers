@@ -94,7 +94,11 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
             else if (methodCallExpression.Method.MethodMatches(typeof(TableRef), nameof(TableRef.Table)) &&
                 _schemaRetriever.IsModel(methodCallExpression.Method.GetGenericArguments()[0]))
             {
-                translation.From = methodCallExpression.Method.GetGenericArguments()[0];
+                translation.From = new FromTable(methodCallExpression.Method.GetGenericArguments()[0]);
+            }
+            else if (methodCallExpression.Method.MethodMatches(typeof(TableRef), nameof(TableRef.FromSubquery), 1))
+            {
+                translation.From = new FromSubquery(((LambdaExpression)methodCallExpression.Arguments[0]).Body);
             }
             else if (methodCallExpression.Method.MethodMatches(typeof(Enumerable), nameof(Enumerable.Cast), 1) &&
                 (methodCallExpression.Type == methodCallExpression.Arguments[0].Type ||
@@ -142,10 +146,11 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
             Type? iEnumerable = updated.Type.GetInterfaces().FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
             if (iEnumerable is not null)
             {
-                translation.From = iEnumerable.GetGenericArguments()[0];
+                Type fromType = iEnumerable.GetGenericArguments()[0];
+                translation.From = new FromTable(fromType);
                 if (JoinCandidates.Count > 0)
                 {
-                    (Type toTable, Expression whereExpression) = JoinInfo(translation.From, JoinCandidates[0]);
+                    (Type toTable, Expression whereExpression) = JoinInfo(fromType, JoinCandidates[0]);
                     translation.AddWhere(whereExpression);
 
                     foreach(Expression join in JoinCandidates.Skip(1))

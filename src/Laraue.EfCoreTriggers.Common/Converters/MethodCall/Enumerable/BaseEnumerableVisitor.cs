@@ -42,7 +42,7 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable
             _ = finalSql.WithIdent(x => x
                 .Append("SELECT ")
                 .Append(Visit(expressions.Select, visitedMembers))
-                .AppendNewLine($"FROM {SqlGenerator.GetTableSql(expressions.From)}"));
+                .AppendNewLine($"FROM {expressions.From.GetSql(SqlGenerator, VisitorFactory, visitedMembers)}"));
 
             foreach (TableJoin join in  expressions.Joins)
             {
