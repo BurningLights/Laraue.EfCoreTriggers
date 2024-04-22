@@ -16,12 +16,14 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.TriggerVisitors
         }
 
         /// <inheritdoc />
-        public SqlBuilder Visit(TriggerDeleteAction triggerAction, VisitedMembers visitedMembers)
+        public SqlBuilder Visit(TriggerDeleteAction triggerAction, VisitArguments visitArguments)
         {
             var tableType = triggerAction.Predicate.Parameters.Last().Type;
+            // Mark table type as referenced
+            visitArguments.Aliases.ReferenceTable(tableType);
 
             var triggerCondition = new TriggerCondition(triggerAction.Predicate);
-            var conditionStatement = _factory.Visit(triggerCondition, visitedMembers);
+            var conditionStatement = _factory.Visit(triggerCondition, visitArguments);
         
             return new SqlBuilder()
                 .Append($"DELETE FROM {_sqlGenerator.GetTableSql(tableType)}")

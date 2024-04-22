@@ -16,6 +16,6 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
         /// <param name="argumentTypes">Argument types to know what prefix should have each os passed arg of expression.</param>
         /// <param name="visitedMembers">Dictionary which collect all visited members.</param>
         /// <returns></returns>
-        SqlBuilder Visit(TExpression expression, VisitedMembers visitedMembers);
+        SqlBuilder Visit(TExpression expression, VisitArguments visitedMembers);
     }
 }

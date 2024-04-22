@@ -18,7 +18,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
         }
 
         /// <inheritdoc />
-        public override SqlBuilder Visit(ParameterExpression expression, VisitedMembers visitedMembers)
+        public override SqlBuilder Visit(ParameterExpression expression, VisitArguments visitedMembers)
         {
             MemberInfo[] primaryKeys = _schemaRetriever.GetPrimaryKeyMembers(expression.Type);
             return primaryKeys.Length == 1

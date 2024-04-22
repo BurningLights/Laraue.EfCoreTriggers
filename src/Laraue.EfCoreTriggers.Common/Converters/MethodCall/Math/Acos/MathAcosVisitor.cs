@@ -21,10 +21,10 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Math.Acos
         /// <inheritdoc />
         public override SqlBuilder Visit(
             MethodCallExpression expression,
-            VisitedMembers visitedMembers)
+            VisitArguments visitArguments)
         {
             var argument = expression.Arguments[0];
-            var sqlBuilder = VisitorFactory.Visit(argument, visitedMembers);
+            var sqlBuilder = VisitorFactory.Visit(argument, visitArguments);
             return SqlBuilder.FromString($"ACOS({sqlBuilder})");
         }
     }

@@ -13,7 +13,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.TriggerVisitors
             _factory = factory;
         }
     
-        public SqlBuilder Visit(TriggerActionsGroup triggerActionsGroup, VisitedMembers visitedMembers)
+        public SqlBuilder Visit(TriggerActionsGroup triggerActionsGroup, VisitArguments visitedMembers)
         {
             var actionsSql = triggerActionsGroup.ActionExpressions
                 .Select(action => _factory.Visit(action, visitedMembers))

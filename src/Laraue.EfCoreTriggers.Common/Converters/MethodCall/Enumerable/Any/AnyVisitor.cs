@@ -15,9 +15,9 @@ internal class AnyVisitor(IExpressionVisitorFactory visitorFactory, ISqlGenerato
 {
     protected override string MethodName => nameof(System.Linq.Enumerable.Any);
 
-    public override SqlBuilder Visit(MethodCallExpression expression, VisitedMembers visitedMembers) =>
-        SqlBuilder.FromString("EXISTS").Append(base.Visit(expression: expression, visitedMembers: visitedMembers));
+    public override SqlBuilder Visit(MethodCallExpression expression, VisitArguments visitArguments) =>
+        SqlBuilder.FromString("EXISTS").Append(base.Visit(expression: expression, visitArguments: visitArguments));
 
-    protected override SqlBuilder Visit(Expression? select, VisitedMembers visitedMembers) =>
-        SqlBuilder.FromString(SqlGenerator.AliasExpression(VisitorFactory.Visit(Expression.Constant(1), visitedMembers), "a"));
+    protected override SqlBuilder Visit(Expression? select, VisitArguments visitArguments) =>
+        SqlBuilder.FromString(SqlGenerator.AliasExpression(VisitorFactory.Visit(Expression.Constant(1), visitArguments), "a"));
 }

@@ -9,11 +9,11 @@ using Laraue.EfCoreTriggers.Common.SqlGeneration;
 namespace Laraue.EfCoreTriggers.Common.Converters.QueryTranslator;
 public record TableJoin
 {
-    public Type Table { get; }
+    public IFromSource Table { get; }
     public JoinType JoinType { get; }
     public Expression? On { get; }
 
-    public TableJoin(Type table,  JoinType joinType, Expression? on)
+    public TableJoin(IFromSource table,  JoinType joinType, Expression? on)
     {
         Table = table;
         JoinType = joinType;

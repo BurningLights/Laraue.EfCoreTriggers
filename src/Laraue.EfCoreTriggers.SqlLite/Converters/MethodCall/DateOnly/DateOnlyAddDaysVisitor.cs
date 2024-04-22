@@ -9,7 +9,7 @@ public class DateOnlyAddDaysVisitor(IExpressionVisitorFactory visitorFactory) : 
     /// <inheritdoc />
     protected override string MethodName => nameof(System.DateOnly.AddDays);
 
-    public override SqlBuilder Visit(MethodCallExpression expression, VisitedMembers visitedMembers)
+    public override SqlBuilder Visit(MethodCallExpression expression, VisitArguments visitedMembers)
     {
         Expression dateOnly = expression.Object;
         Expression argument = expression.Arguments[0];

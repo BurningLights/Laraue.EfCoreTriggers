@@ -23,17 +23,19 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.TriggerVisitors
         }
 
         /// <inheritdoc />
-        public SqlBuilder Visit(TriggerUpdateAction triggerAction, VisitedMembers visitedMembers)
+        public SqlBuilder Visit(TriggerUpdateAction triggerAction, VisitArguments visitArguments)
         {
+            var updateEntity = triggerAction.UpdateExpression.Body.Type;
+            visitArguments.Aliases.ReferenceTable(updateEntity);
+
             var updateStatement = _updateExpressionVisitor.Visit(
                 triggerAction.UpdateExpression,
-                visitedMembers);
+                visitArguments);
         
             var binaryExpressionSql = _expressionVisitorFactory.Visit(
                 (BinaryExpression)triggerAction.Predicate.Body,
-                visitedMembers);
+                visitArguments);
 
-            var updateEntity = triggerAction.UpdateExpression.Body.Type;
 
             return new SqlBuilder()
                 .Append($"UPDATE {_sqlGenerator.GetTableSql(updateEntity)}")

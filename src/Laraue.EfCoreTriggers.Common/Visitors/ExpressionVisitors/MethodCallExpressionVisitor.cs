@@ -19,7 +19,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
         }
 
         /// <inheritdoc />s
-        public override SqlBuilder Visit(MethodCallExpression expression, VisitedMembers visitedMembers)
+        public override SqlBuilder Visit(MethodCallExpression expression, VisitArguments visitedMembers)
         {
             var visitor = GetVisitor(expression);
         

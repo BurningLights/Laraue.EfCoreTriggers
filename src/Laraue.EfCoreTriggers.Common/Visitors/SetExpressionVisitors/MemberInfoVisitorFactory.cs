@@ -22,7 +22,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.SetExpressionVisitors
         }
 
         /// <inheritdoc />
-        public Dictionary<MemberInfo, SqlBuilder> Visit(Expression expression, VisitedMembers visitedMembers)
+        public Dictionary<MemberInfo, SqlBuilder> Visit(Expression expression, VisitArguments visitedMembers)
         {
             return expression switch
             {
@@ -48,7 +48,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.SetExpressionVisitors
         }
 
         /// <inheritdoc />
-        public IEnumerable<SqlBuilder> VisitValues(Expression expression, VisitedMembers visitedMembers)
+        public IEnumerable<SqlBuilder> VisitValues(Expression expression, VisitArguments visitedMembers)
         {
             return expression switch
             {
@@ -60,7 +60,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.SetExpressionVisitors
             };
         }
 
-        private Dictionary<MemberInfo, SqlBuilder> Visit<TExpression>(TExpression expression, VisitedMembers visitedMembers)
+        private Dictionary<MemberInfo, SqlBuilder> Visit<TExpression>(TExpression expression, VisitArguments visitedMembers)
             where TExpression : Expression => _serviceProvider.GetRequiredService<IMemberInfoVisitor<TExpression>>()
                 .Visit(expression, visitedMembers);
 
@@ -68,7 +68,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.SetExpressionVisitors
             where TExpression : Expression => _serviceProvider.GetRequiredService<IMemberInfoVisitor<TExpression>>()
                 .VisitKeys(expression);
 
-        private IEnumerable<SqlBuilder> VisitValues<TExpression>(TExpression expression, VisitedMembers visitedMembers)
+        private IEnumerable<SqlBuilder> VisitValues<TExpression>(TExpression expression, VisitArguments visitedMembers)
             where TExpression : Expression => _serviceProvider.GetRequiredService<IMemberInfoVisitor<TExpression>>()
                 .VisitValues(expression, visitedMembers);
     }

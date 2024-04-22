@@ -23,7 +23,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
         }
     
         /// <inheritdoc />
-        public SqlBuilder Visit(Expression expression, VisitedMembers visitedMembers)
+        public SqlBuilder Visit(Expression expression, VisitArguments visitedMembers)
         {
             return expression switch
             {
@@ -41,14 +41,14 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
             };
         }
     
-        private SqlBuilder VisitAndRememberMember(MemberExpression expression, VisitedMembers visitedMembers)
+        private SqlBuilder VisitAndRememberMember(MemberExpression expression, VisitArguments visitedMembers)
         {
             return _visitingInfo.ExecuteWithChangingMember(
                 expression.Member,
                 () => Visit(expression, visitedMembers));
         }
 
-        private SqlBuilder Visit<TExpression>(TExpression expression, VisitedMembers visitedMembers)
+        private SqlBuilder Visit<TExpression>(TExpression expression, VisitArguments visitedMembers)
             where TExpression : Expression
         {
             var visitor = GetExpressionVisitor<TExpression>();

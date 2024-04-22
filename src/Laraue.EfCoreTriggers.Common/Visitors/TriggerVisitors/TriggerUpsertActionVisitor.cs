@@ -27,17 +27,18 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.TriggerVisitors
         }
 
         /// <inheritdoc />
-        public virtual SqlBuilder Visit(TriggerUpsertAction triggerAction, VisitedMembers visitedMembers)
+        public virtual SqlBuilder Visit(TriggerUpsertAction triggerAction, VisitArguments visitArguments)
         {
+            var updateEntityType = triggerAction.InsertExpression.Body.Type;
+            visitArguments.Aliases.ReferenceTable(updateEntityType);
+
             var matchExpressionParts = _memberInfoVisitorFactory.Visit(
                 triggerAction.MatchExpression,
-                visitedMembers);
-
-            var updateEntityType = triggerAction.InsertExpression.Body.Type;
+                visitArguments);
 
             var insertStatementSql = _insertExpressionVisitor.Visit(
                 triggerAction.InsertExpression,
-                visitedMembers);
+                visitArguments);
             
             var sqlBuilder = SqlBuilder.FromString($"INSERT INTO {_sqlGenerator.GetTableSql(updateEntityType)} ")
                 .Append(insertStatementSql)
@@ -55,7 +56,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.TriggerVisitors
             {
                 var updateStatementSql = _updateExpressionVisitor.Visit(
                     triggerAction.UpdateExpression,
-                    visitedMembers);
+                    visitArguments);
             
                 sqlBuilder.Append(" DO UPDATE SET ")
                     .Append(updateStatementSql)

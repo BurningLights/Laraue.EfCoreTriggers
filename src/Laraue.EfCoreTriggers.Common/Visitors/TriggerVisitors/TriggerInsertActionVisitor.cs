@@ -22,7 +22,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.TriggerVisitors
         }
     
         /// <inheritdoc />
-        public SqlBuilder Visit(TriggerInsertAction triggerAction, VisitedMembers visitedMembers)
+        public SqlBuilder Visit(TriggerInsertAction triggerAction, VisitArguments visitedMembers)
         {
             var insertStatement = _visitor.Visit(
                 triggerAction.InsertExpression,

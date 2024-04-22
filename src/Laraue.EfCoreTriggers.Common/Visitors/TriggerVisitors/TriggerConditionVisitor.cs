@@ -15,7 +15,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.TriggerVisitors
         }
 
         /// <inheritdoc />
-        public SqlBuilder Visit(TriggerCondition triggerAction, VisitedMembers visitedMembers)
+        public SqlBuilder Visit(TriggerCondition triggerAction, VisitArguments visitedMembers)
         {
             var conditionBody = triggerAction.Predicate.Body;
             return conditionBody switch

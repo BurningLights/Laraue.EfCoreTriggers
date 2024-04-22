@@ -29,7 +29,7 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable
         private readonly ISelectTranslator selectTranslator = selectTranslator;
 
         /// <inheritdoc />
-        public override SqlBuilder Visit(MethodCallExpression expression, VisitedMembers visitedMembers)
+        public override SqlBuilder Visit(MethodCallExpression expression, VisitArguments visitArguments)
         {
             TranslatedSelect expressions = selectTranslator.Translate(expression);
             if (expressions.From is null)
@@ -41,8 +41,8 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable
             SqlBuilder finalSql = SqlBuilder.FromString("(");
             _ = finalSql.WithIdent(x => x
                 .Append("SELECT ")
-                .Append(Visit(expressions.Select, visitedMembers))
-                .AppendNewLine($"FROM {expressions.From.GetSql(SqlGenerator, VisitorFactory, visitedMembers)}"));
+                .Append(Visit(expressions.Select, visitArguments))
+                .AppendNewLine($"FROM {expressions.From.GetSql(SqlGenerator, VisitorFactory, visitArguments)}"));
 
             foreach (TableJoin join in  expressions.Joins)
             {
@@ -51,7 +51,7 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable
                     .Append(" ").Append(SqlGenerator.GetTableSql(join.Table)));
                 if (join.On is not null)
                 {
-                    joinSql.Append(" ON (").Append(VisitorFactory.Visit(join.On, visitedMembers)).Append(")");
+                    joinSql.Append(" ON (").Append(VisitorFactory.Visit(join.On, visitArguments)).Append(")");
                 }
             }
 
@@ -59,32 +59,32 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable
             {
                 _ = finalSql
                     .AppendNewLine("WHERE ")
-                    .Append(VisitorFactory.Visit(expressions.Where, visitedMembers));
+                    .Append(VisitorFactory.Visit(expressions.Where, visitArguments));
             }
 
             if (expressions.OrderBy.Count != 0)
             {
                 _ = finalSql
                     .AppendNewLine("ORDER BY ")
-                    .AppendJoin(", ", expressions.OrderBy.Select(e => VisitorFactory.Visit(e, visitedMembers)));
+                    .AppendJoin(", ", expressions.OrderBy.Select(e => VisitorFactory.Visit(e, visitArguments)));
             }
 
             if (expressions.Limit is not null)
             {
                 _ = finalSql
                     .AppendNewLine("LIMIT ")
-                    .Append(VisitorFactory.Visit(expressions.Limit, visitedMembers));
+                    .Append(VisitorFactory.Visit(expressions.Limit, visitArguments));
                 if (expressions.Offset is not null)
                 {
                     _ = finalSql
                         .Append(" OFFSET ")
-                        .Append(VisitorFactory.Visit(expressions.Offset, visitedMembers));
+                        .Append(VisitorFactory.Visit(expressions.Offset, visitArguments));
                 }
             } else if (expressions.Offset is not null)
             {
                 _ = finalSql
                     .AppendNewLine("LIMIT -1 OFFSET ")
-                    .Append(VisitorFactory.Visit(expressions.Offset, visitedMembers));
+                    .Append(VisitorFactory.Visit(expressions.Offset, visitArguments));
             }
 
             _ = finalSql.Append(")");
@@ -96,8 +96,8 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable
         /// Generate pairs SqlBuilder -> Expression for the select expression
         /// </summary>
         /// <param name="select"></param>
-        /// <param name="visitedMembers"></param>
+        /// <param name="visitArguments"></param>
         /// <returns></returns>
-        protected abstract SqlBuilder Visit(Expression? select, VisitedMembers visitedMembers);
+        protected abstract SqlBuilder Visit(Expression? select, VisitArguments visitArguments);
     }
 }

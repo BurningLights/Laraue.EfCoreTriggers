@@ -1,4 +1,5 @@
-﻿using Laraue.EfCoreTriggers.Common.Extensions;
+﻿using Laraue.EfCoreTriggers.Common.Converters.QueryTranslator.Expressions;
+using Laraue.EfCoreTriggers.Common.Extensions;
 using Laraue.EfCoreTriggers.Common.SqlGeneration;
 using Laraue.EfCoreTriggers.Common.TriggerBuilders.TableRefs;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
@@ -7,6 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -19,11 +21,14 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
     protected readonly IDbSchemaRetriever _schemaRetriever = schemaRetriever;
 
     protected TranslatedSelect translation = new();
+    protected TableAliases aliases = new(schemaRetriever);
+
     protected List<Expression> JoinCandidates { get; } = [];
 
-    public TranslatedSelect Translate(Expression expression)
+    public TranslatedSelect Translate(Expression expression, TableAliases aliases)
     {
         translation = new TranslatedSelect();
+        this.aliases = aliases;
         _ = Visit(expression);
         return translation;
     }
@@ -38,6 +43,7 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
             ? throw new NotSupportedException($"Cannot translate argument {arguments[1]}")
             : lambda;
 
+    [DoesNotReturn]
     protected static void CannotTranslate(Expression expression) =>
         throw new NotSupportedException($"Cannot translate expression {expression}.");
 
@@ -94,11 +100,11 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
             else if (methodCallExpression.Method.MethodMatches(typeof(TableRef), nameof(TableRef.Table)) &&
                 _schemaRetriever.IsModel(methodCallExpression.Method.GetGenericArguments()[0]))
             {
-                translation.From = new FromTable(methodCallExpression.Method.GetGenericArguments()[0]);
+                translation.From = new FromTable(methodCallExpression.Method.GetGenericArguments()[0], aliases);
             }
             else if (methodCallExpression.Method.MethodMatches(typeof(TableRef), nameof(TableRef.FromSubquery), 1))
             {
-                translation.From = new FromSubquery(((LambdaExpression)methodCallExpression.Arguments[0]).Body);
+                translation.From = new FromSubquery(((LambdaExpression)methodCallExpression.Arguments[0]).Body, aliases);
             }
             else if (methodCallExpression.Method.MethodMatches(typeof(Enumerable), nameof(Enumerable.Cast), 1) &&
                 (methodCallExpression.Type == methodCallExpression.Arguments[0].Type ||
@@ -121,7 +127,7 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
         return updatedExpression;
     }
 
-    protected (Type, Expression) JoinInfo(Type fromType, Expression toExpression)
+    protected (FromTable, Expression) JoinInfo(FromTable fromType, Expression toExpression)
     {
         Type tableType = toExpression switch
         {
@@ -130,10 +136,13 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
             _ => throw new ArgumentException("The argument expression type is unknown.")
         };
 
-        KeyInfo[] relationKeys = _schemaRetriever.GetForeignKeyMembers(fromType, tableType);
+        KeyInfo[] relationKeys = _schemaRetriever.GetForeignKeyMembers(fromType.FromType, tableType);
 
-        return (tableType,  relationKeys.Select(key => Expression.Equal(
-            Expression.MakeMemberAccess(Expression.Parameter(fromType), key.ForeignKey),
+        FromTable nextTable = new(tableType, aliases);
+
+        // TODO: Need separate alias types for MemberExpression, ParameterExpression, and ConstantExpression
+        return (nextTable,  relationKeys.Select(key => Expression.Equal(
+            Expression.MakeMemberAccess(Expression.Constant(null, fromType.FromType).ToAliased(fromType.Alias), key.ForeignKey),
             Expression.MakeMemberAccess(toExpression, key.PrincipalKey)
         )).Aggregate((left, right) => Expression.And(left, right)));
     }
@@ -147,15 +156,17 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
             if (iEnumerable is not null)
             {
                 Type fromType = iEnumerable.GetGenericArguments()[0];
-                translation.From = new FromTable(fromType);
+                FromTable fromTable = new(fromType, aliases);
+                translation.From = fromTable;
                 if (JoinCandidates.Count > 0)
                 {
-                    (Type toTable, Expression whereExpression) = JoinInfo(fromType, JoinCandidates[0]);
+                    // TODO: Don't need to alias if referencing main table
+                    (FromTable toTable, Expression whereExpression) = JoinInfo(fromTable, JoinCandidates[0]);
                     translation.AddWhere(whereExpression);
 
                     foreach(Expression join in JoinCandidates.Skip(1))
                     {
-                        (Type nextTable, whereExpression) = JoinInfo(toTable, join);
+                        (FromTable nextTable, whereExpression) = JoinInfo(toTable, join);
                         translation.Joins.Add(new TableJoin(nextTable, JoinType.INNER, whereExpression));
                         toTable = nextTable;
                     }
@@ -205,5 +216,21 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
         }
 
         return updated;
+    }
+
+    protected override Expression VisitExtension(Expression node)
+    {
+        node = base.VisitExtension(node);
+
+        if(node is AliasedExpression)
+        {
+            // AliasedParameterExpression is valid
+        }
+        else
+        {
+            CannotTranslate(node);
+        }
+
+        return node;
     }
 }

@@ -16,7 +16,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.TriggerVisitors
         }
 
         /// <inheritdoc />
-        public SqlBuilder Visit(ITriggerAction triggerAction, VisitedMembers visitedMembers)
+        public SqlBuilder Visit(ITriggerAction triggerAction, VisitArguments visitedMembers)
         {
             return triggerAction switch
             {
@@ -31,7 +31,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.TriggerVisitors
             };
         }
 
-        private SqlBuilder Visit<T>(T triggerAction, VisitedMembers visitedMembers)
+        private SqlBuilder Visit<T>(T triggerAction, VisitArguments visitedMembers)
             where T : ITriggerAction
         {
             return _provider.GetRequiredService<ITriggerActionVisitor<T>>()

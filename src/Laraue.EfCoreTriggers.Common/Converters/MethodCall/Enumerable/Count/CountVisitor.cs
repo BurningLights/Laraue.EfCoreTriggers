@@ -23,7 +23,7 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable.Count
         protected override string MethodName => nameof(System.Linq.Enumerable.Count);
 
         /// <inheritdoc />
-        protected override SqlBuilder Visit(Expression? select, VisitedMembers visitedMembers) =>
+        protected override SqlBuilder Visit(Expression? select, VisitArguments visitArguments) =>
             SqlBuilder.FromString("count(*)");
     }
 }

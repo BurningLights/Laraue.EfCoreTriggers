@@ -1,19 +1,16 @@
 ﻿using Laraue.EfCoreTriggers.Common.SqlGeneration;
 using Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Laraue.EfCoreTriggers.Common.Converters.QueryTranslator;
-internal class FromSubquery : IFromSource
+public class FromSubquery(Expression subqueryExpression, TableAliases aliases) : IFromSource
 {
-    public Expression SubqueryExpression { get; }
+    public Expression SubqueryExpression { get; } = subqueryExpression;
 
-    public FromSubquery(Expression subqueryExpression) => SubqueryExpression = subqueryExpression;
+    [NotNull]
+    public string? Alias { get; } = aliases.GetNextSubqueryAlias();
 
-    public SqlBuilder GetSql(ISqlGenerator sqlGenerator, IExpressionVisitorFactory visitorFactory, VisitedMembers visitedMembers) =>
-        visitorFactory.Visit(SubqueryExpression, visitedMembers);
+    public SqlBuilder GetSql(ISqlGenerator sqlGenerator, IExpressionVisitorFactory visitorFactory, VisitArguments visitedMembers) =>
+        SqlBuilder.FromString(sqlGenerator.AliasExpression(visitorFactory.Visit(SubqueryExpression, visitedMembers), Alias));
 }

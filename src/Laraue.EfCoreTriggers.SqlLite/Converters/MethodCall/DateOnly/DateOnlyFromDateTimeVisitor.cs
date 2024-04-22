@@ -14,7 +14,7 @@ public class DateOnlyFromDateTimeVisitor(IExpressionVisitorFactory visitorFactor
     /// <inheritdoc />
     protected override string MethodName => nameof(System.DateOnly.FromDateTime);
 
-    public override SqlBuilder Visit(MethodCallExpression expression, VisitedMembers visitedMembers)
+    public override SqlBuilder Visit(MethodCallExpression expression, VisitArguments visitedMembers)
     {
         Expression argument = expression.Arguments[0];
         SqlBuilder sqlBuilder = VisitorFactory.Visit(argument, visitedMembers);

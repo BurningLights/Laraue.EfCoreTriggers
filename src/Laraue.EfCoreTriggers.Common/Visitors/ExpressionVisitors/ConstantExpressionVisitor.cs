@@ -16,7 +16,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
         }
 
         /// <inheritdoc />
-        public override SqlBuilder Visit(ConstantExpression expression, VisitedMembers visitedMembers)
+        public override SqlBuilder Visit(ConstantExpression expression, VisitArguments visitedMembers)
         {
             switch (expression.Value)
             {

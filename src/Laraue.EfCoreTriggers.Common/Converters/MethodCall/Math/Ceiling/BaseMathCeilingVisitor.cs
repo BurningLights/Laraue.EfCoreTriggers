@@ -26,7 +26,7 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Math.Ceiling
         /// <inheritdoc />
         public override SqlBuilder Visit(
             MethodCallExpression expression,
-            VisitedMembers visitedMembers)
+            VisitArguments visitedMembers)
         {
             var argument = expression.Arguments[0];
             

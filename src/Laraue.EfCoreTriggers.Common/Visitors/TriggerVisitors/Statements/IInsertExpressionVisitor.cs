@@ -16,6 +16,6 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.TriggerVisitors.Statements
         /// <param name="argumentTypes"></param>
         /// <param name="visitedMembers"></param>
         /// <returns></returns>
-        SqlBuilder Visit(LambdaExpression expression, VisitedMembers visitedMembers);
+        SqlBuilder Visit(LambdaExpression expression, VisitArguments visitedMembers);
     }
 }

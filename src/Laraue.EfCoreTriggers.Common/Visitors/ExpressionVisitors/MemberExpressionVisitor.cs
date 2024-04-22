@@ -34,11 +34,11 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
         }
 
         /// <inheritdoc />
-        public override SqlBuilder Visit(MemberExpression expression, VisitedMembers visitedMembers)
+        public override SqlBuilder Visit(MemberExpression expression, VisitArguments vistArguments)
         {
-            visitedMembers.AddMember(ArgumentType.Default, expression.Member);
+            vistArguments.VisitedMembers.AddMember(ArgumentType.Default, expression.Member);
         
-            return SqlBuilder.FromString(Visit(expression, ArgumentType.Default, visitedMembers));
+            return SqlBuilder.FromString(Visit(expression, ArgumentType.Default, vistArguments));
         }
     
         /// <summary>
@@ -48,7 +48,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
         /// <param name="argumentType"></param>
         /// <param name="visitedMembers"></param>
         /// <returns></returns>
-        private string Visit(MemberExpression memberExpression, ArgumentType argumentType, VisitedMembers visitedMembers)
+        private string Visit(MemberExpression memberExpression, ArgumentType argumentType, VisitArguments visitedMembers)
         {
             switch (memberExpression.Expression)
             {
@@ -100,7 +100,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
         private string GetColumnSql(
             MemberExpression memberExpression,
             MemberInfo parentMember,
-            VisitedMembers visitedMembers)
+            VisitArguments visitArguments)
         {
             var argumentType = ArgumentType.Default;
             var memberType = memberExpression.Expression.Type;
@@ -120,9 +120,9 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
             {
                 // Multi-step or NEW/OLD table reference ending in relation - use key reference if foreign key uses primary key
                 return CanShortcut(memberExpression.Type, parentMember, out KeyInfo[] foreignKeys, out MemberInfo[] primaryKeys)
-                    ? (string)_visitorFactory.Visit(Expression.MakeMemberAccess(memberExpression, foreignKeys[0].ForeignKey), visitedMembers)
+                    ? (string)_visitorFactory.Visit(Expression.MakeMemberAccess(memberExpression, foreignKeys[0].ForeignKey), visitArguments)
                     : (string)_visitorFactory.Visit(Expression.MakeMemberAccess(
-                        Expression.MakeMemberAccess(memberExpression, parentMember), primaryKeys[0]), visitedMembers);
+                        Expression.MakeMemberAccess(memberExpression, parentMember), primaryKeys[0]), visitArguments);
             }
             else if (argumentType == ArgumentType.Default)
             {
@@ -151,10 +151,10 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
                 // Limit to 1
                 subquery = Expression.Call(null, first, subquery);
 
-                return _visitorFactory.Visit(subquery, visitedMembers);
+                return _visitorFactory.Visit(subquery, visitArguments);
             }
 
-            visitedMembers.AddMember(argumentType, parentMember);
+            visitArguments.VisitedMembers.AddMember(argumentType, parentMember);
         
             return GetColumnSql(memberType, parentMember, argumentType);
         }

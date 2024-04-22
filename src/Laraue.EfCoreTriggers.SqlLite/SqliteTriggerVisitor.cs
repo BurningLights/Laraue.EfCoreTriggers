@@ -10,11 +10,13 @@ public class SqliteTriggerVisitor : BaseTriggerVisitor
 {
     private readonly ITriggerActionVisitorFactory _factory;
     private readonly ISqlGenerator _sqlGenerator;
+    private readonly IDbSchemaRetriever _schemaRetriever;
 
-    public SqliteTriggerVisitor(ITriggerActionVisitorFactory factory, ISqlGenerator sqlGenerator)
+    public SqliteTriggerVisitor(ITriggerActionVisitorFactory factory, ISqlGenerator sqlGenerator, IDbSchemaRetriever schemaRetriever)
     {
         _factory = factory;
         _sqlGenerator = sqlGenerator;
+        _schemaRetriever = schemaRetriever;
     }
 
     public override string GenerateCreateTriggerSql(ITrigger trigger)
@@ -22,7 +24,7 @@ public class SqliteTriggerVisitor : BaseTriggerVisitor
         var sql = new SqlBuilder();
         
         var actionsSql = trigger.Actions
-            .Select(action => _factory.Visit(action, new VisitedMembers()))
+            .Select(action => _factory.Visit(action, new VisitArguments(new VisitedMembers(), new TableAliases(_schemaRetriever))))
             .ToArray();
         
         var actionsCount = actionsSql.Length;

@@ -23,7 +23,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
         }
 
         /// <inheritdoc />
-        public override SqlBuilder Visit(UnaryExpression expression, VisitedMembers visitedMembers)
+        public override SqlBuilder Visit(UnaryExpression expression, VisitArguments visitedMembers)
         {
             var internalExpressionSql = _factory.Visit(expression.Operand, visitedMembers);
             var sqlBuilder = new SqlBuilder();

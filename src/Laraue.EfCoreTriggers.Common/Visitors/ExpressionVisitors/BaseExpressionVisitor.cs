@@ -8,6 +8,6 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
     {
         public abstract SqlBuilder Visit(
             TExpression expression,
-            VisitedMembers visitedMembers);
+            VisitArguments visitedMembers);
     }
 }

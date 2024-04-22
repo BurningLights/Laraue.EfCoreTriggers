@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Laraue.EfCoreTriggers.Common.SqlGeneration;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -12,6 +13,7 @@ public interface ISelectTranslator
     /// Translates the given expression into the components of a SELECT query
     /// </summary>
     /// <param name="expression"></param>
+    /// <param name="aliases"></param>
     /// <returns></returns>
-    public TranslatedSelect Translate(Expression expression);
+    public TranslatedSelect Translate(Expression expression, TableAliases aliases);
 }

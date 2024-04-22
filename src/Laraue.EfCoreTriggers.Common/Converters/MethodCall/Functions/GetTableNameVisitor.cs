@@ -25,7 +25,7 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Functions
         /// <inheritdoc />
         public override SqlBuilder Visit(
             MethodCallExpression expression,
-            VisitedMembers visitedMembers)
+            VisitArguments visitArguments)
         {
             var entityType = expression.Method.GetGenericArguments()[0];
 

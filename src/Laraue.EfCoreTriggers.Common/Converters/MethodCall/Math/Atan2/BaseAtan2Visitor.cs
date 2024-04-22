@@ -27,7 +27,7 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Math.Atan2
         /// <inheritdoc />
         public override SqlBuilder Visit(
             MethodCallExpression expression,
-            VisitedMembers visitedMembers)
+            VisitArguments visitedMembers)
         {
             var argumentsSql = VisitorFactory.VisitArguments(expression, visitedMembers);
             

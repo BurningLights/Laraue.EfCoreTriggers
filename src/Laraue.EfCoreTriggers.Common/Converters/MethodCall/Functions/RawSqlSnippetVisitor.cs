@@ -17,5 +17,5 @@ public class RawSqlSnippetVisitor : BaseTriggerFunctionsVisitor
 
     protected override string MethodName => nameof(TriggerFunctions.RawSqlSnippet);
 
-    public override SqlBuilder Visit(MethodCallExpression expression, VisitedMembers visitedMembers) => VisitorFactory.Visit(expression.Arguments[0], visitedMembers);
+    public override SqlBuilder Visit(MethodCallExpression expression, VisitArguments visitArguments) => VisitorFactory.Visit(expression.Arguments[0], visitArguments);
 }

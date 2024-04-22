@@ -29,7 +29,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.SetExpressionVisitors
             expression.Arguments.Cast<MemberExpression>().Select(memberExpression => memberExpression.Member);
 
         /// <inheritdoc />
-        public IEnumerable<SqlBuilder> VisitValues(NewExpression expression, VisitedMembers visitedMembers) =>
+        public IEnumerable<SqlBuilder> VisitValues(NewExpression expression, VisitArguments visitedMembers) =>
             expression.Arguments.Cast<MemberExpression>().Select(memberExpression => _visitingInfo.ExecuteWithChangingMember(
                 memberExpression.Member, () => _factory.Visit(memberExpression, visitedMembers)));
 

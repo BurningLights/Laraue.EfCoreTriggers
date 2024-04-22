@@ -27,7 +27,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.SetExpressionVisitors
         /// <param name="expression"></param>
         /// <param name="visitedMembers"></param>
         /// <returns></returns>
-        IEnumerable<SqlBuilder> VisitValues(TExpression expression, VisitedMembers visitedMembers);
+        IEnumerable<SqlBuilder> VisitValues(TExpression expression, VisitArguments visitedMembers);
 
         /// <summary>
         /// Visit passed <see cref="Expression"/> and return
@@ -38,6 +38,6 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.SetExpressionVisitors
         /// <returns></returns>
         Dictionary<MemberInfo, SqlBuilder> Visit(
             TExpression expression,
-            VisitedMembers visitedMembers) => VisitKeys(expression).Zip(VisitValues(expression, visitedMembers)).ToDictionary();
+            VisitArguments visitedMembers) => VisitKeys(expression).Zip(VisitValues(expression, visitedMembers)).ToDictionary();
     }
 }

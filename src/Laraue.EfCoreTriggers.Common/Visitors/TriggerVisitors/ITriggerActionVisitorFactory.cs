@@ -15,6 +15,6 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.TriggerVisitors
         /// <param name="triggerAction"></param>
         /// <param name="visitedMembers"></param>
         /// <returns></returns>
-        SqlBuilder Visit(ITriggerAction triggerAction, VisitedMembers visitedMembers);
+        SqlBuilder Visit(ITriggerAction triggerAction, VisitArguments visitedMembers);
     }
 }

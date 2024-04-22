@@ -29,7 +29,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
         /// <inheritdoc />
         public override SqlBuilder Visit(
             BinaryExpression expression,
-            VisitedMembers visitedMembers)
+            VisitArguments visitedMembers)
         {
             if (expression is
                 {

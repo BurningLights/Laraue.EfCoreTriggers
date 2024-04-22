@@ -26,7 +26,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.TriggerVisitors.Statements
         }
 
         /// <inheritdoc />
-        public SqlBuilder Visit(LambdaExpression expression, VisitedMembers visitedMembers)
+        public SqlBuilder Visit(LambdaExpression expression, VisitArguments visitedMembers)
         {
             var updateType = expression.Body.Type;
         

@@ -16,9 +16,9 @@ internal class SumVisitor(IExpressionVisitorFactory visitorFactory, ISqlGenerato
 {
     protected override string MethodName => nameof(System.Linq.Enumerable.Sum);
 
-    protected override SqlBuilder Visit(Expression? select, VisitedMembers visitedMembers)
+    protected override SqlBuilder Visit(Expression? select, VisitArguments visitArguments)
     {
         ArgumentNullException.ThrowIfNull(select);
-        return SqlBuilder.FromString($"SUM({VisitorFactory.Visit(select, visitedMembers)})");
+        return SqlBuilder.FromString($"SUM({VisitorFactory.Visit(select, visitArguments)})");
     }
 }

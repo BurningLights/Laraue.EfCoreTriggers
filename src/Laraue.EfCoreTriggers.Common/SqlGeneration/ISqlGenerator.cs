@@ -143,5 +143,12 @@ namespace Laraue.EfCoreTriggers.Common.SqlGeneration
         /// <param name="alias"></param>
         /// <returns></returns>
         string AliasExpression(string sql, string alias);
+
+        /// <summary>
+        /// Wraps the given name with identifier delimiters
+        /// </summary>
+        /// <param name="sql"></param>
+        /// <returns></returns>
+        string WrapWithDelimiters(string identifier);
     }
 }

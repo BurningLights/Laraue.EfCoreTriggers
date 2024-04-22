@@ -14,5 +14,5 @@ public class FirstVisitor(IExpressionVisitorFactory visitorFactory, ISqlGenerato
 {
     protected override string MethodName => nameof(System.Linq.Enumerable.First);
 
-    protected override SqlBuilder Visit(Expression? select, VisitedMembers visitedMembers) => select is null ? SqlBuilder.FromString("*") : VisitorFactory.Visit(select, visitedMembers);
+    protected override SqlBuilder Visit(Expression? select, VisitArguments visitArguments) => select is null ? SqlBuilder.FromString("*") : VisitorFactory.Visit(select, visitArguments);
 }

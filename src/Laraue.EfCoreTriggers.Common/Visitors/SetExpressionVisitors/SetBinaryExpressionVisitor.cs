@@ -23,7 +23,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.SetExpressionVisitors
         public IEnumerable<MemberInfo> VisitKeys(BinaryExpression expression) => [GetMember(expression).Member];
 
        /// <inheritdoc/>
-        public IEnumerable<SqlBuilder> VisitValues(BinaryExpression expression, VisitedMembers visitedMembers) =>
+        public IEnumerable<SqlBuilder> VisitValues(BinaryExpression expression, VisitArguments visitedMembers) =>
             [_factory.Visit(expression, visitedMembers)];
     }
 }

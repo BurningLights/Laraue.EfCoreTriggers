@@ -21,10 +21,10 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.CSharpMethods
         }
 
         /// <inheritdoc />
-        public override SqlBuilder Visit(MethodCallExpression expression, VisitedMembers visitedMembers)
+        public override SqlBuilder Visit(MethodCallExpression expression, VisitArguments visitArguments)
         {
             var argumentsSql = expression.Arguments
-                .Select(argument => VisitorFactory.Visit(argument, visitedMembers))
+                .Select(argument => VisitorFactory.Visit(argument, visitArguments))
                 .ToArray();
             
             return GetSql(argumentsSql[0], argumentsSql[1]);

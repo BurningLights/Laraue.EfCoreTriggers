@@ -185,10 +185,11 @@ namespace Laraue.EfCoreTriggers.Common.SqlGeneration
         {
             return GetColumnSql(type, member, argumentType);
         }
-
-        private string WrapWithDelimiters(string value)
+        
+        /// <inheritdoc />
+        public string WrapWithDelimiters(string identifier)
         {
-            return $"{GetDelimiter()}{value}{GetDelimiter()}";
+            return $"{GetDelimiter()}{identifier}{GetDelimiter()}";
         }
 
         /// <inheritdoc />

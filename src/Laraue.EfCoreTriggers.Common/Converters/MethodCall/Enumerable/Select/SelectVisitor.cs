@@ -14,9 +14,9 @@ public class SelectVisitor(IExpressionVisitorFactory visitorFactory, ISqlGenerat
     protected override string MethodName => nameof(Enumerable.Select);
 
     /// <inheritdoc />
-    protected override SqlBuilder Visit(Expression? select, VisitedMembers visitedMembers)
+    protected override SqlBuilder Visit(Expression? select, VisitArguments visitArguments)
     {
         ArgumentNullException.ThrowIfNull(select);
-        return VisitorFactory.Visit(select, visitedMembers);
+        return VisitorFactory.Visit(select, visitArguments);
     }
 }

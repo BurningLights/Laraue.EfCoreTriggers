@@ -18,7 +18,7 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.String.IsNullOrEmpt
         /// <inheritdoc />
         public override SqlBuilder Visit(
             MethodCallExpression expression,
-            VisitedMembers visitedMembers)
+            VisitArguments visitedMembers)
         {
             var argument = expression.Arguments[0];
             var isNullExpression = Expression.Equal(argument, Expression.Constant(null));

@@ -17,7 +17,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
         /// <returns></returns>
         SqlBuilder Visit(
             Expression expression,
-            VisitedMembers visitedMembers);
+            VisitArguments visitedMembers);
 
         /// <summary>
         /// Get expression visitor for the passed expression type.

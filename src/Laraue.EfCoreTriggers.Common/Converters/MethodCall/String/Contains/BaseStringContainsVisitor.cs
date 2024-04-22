@@ -21,7 +21,7 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.String.Contains
         /// <inheritdoc />
         public override SqlBuilder Visit(
             MethodCallExpression expression,
-            VisitedMembers visitedMembers)
+            VisitArguments visitedMembers)
         {
             var expressionToFindSql = VisitorFactory.VisitArguments(expression, visitedMembers)[0];
             var expressionToSearchSql = VisitorFactory.Visit(expression.Object, visitedMembers);

@@ -12,7 +12,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
             _factory = factory;
         }
 
-        public override SqlBuilder Visit(LambdaExpression expression, VisitedMembers visitedMembers)
+        public override SqlBuilder Visit(LambdaExpression expression, VisitArguments visitedMembers)
         {
             return _factory.Visit(expression.Body, visitedMembers);
         }

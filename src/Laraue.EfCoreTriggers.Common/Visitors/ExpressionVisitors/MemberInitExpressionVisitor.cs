@@ -12,7 +12,7 @@ internal class MemberInitExpressionVisitor(ISqlGenerator sqlGenerator, IExpressi
     private readonly ISqlGenerator _sqlGenerator = sqlGenerator;
     private readonly IExpressionVisitorFactory _visitorFactory = visitorFactory;
 
-    public override SqlBuilder Visit(MemberInitExpression expression, VisitedMembers visitedMembers) => new SqlBuilder().AppendJoin(
+    public override SqlBuilder Visit(MemberInitExpression expression, VisitArguments visitedMembers) => new SqlBuilder().AppendJoin(
         ", ", expression.Bindings.Cast<MemberAssignment>().Select(binding => 
             _sqlGenerator.AliasExpression(_visitorFactory.Visit(binding.Expression, visitedMembers), binding.Member.Name)));
 }

@@ -15,13 +15,13 @@ public class Int32ToStringVisitor(IExpressionVisitorFactory visitorFactory, ISql
     protected override string MethodName => nameof(int.ToString);
 
     /// <inheritdoc />
-    public override SqlBuilder Visit(MethodCallExpression expression, VisitedMembers visitedMembers)
+    public override SqlBuilder Visit(MethodCallExpression expression, VisitArguments visitArguments)
     {
         if (expression.Object is null)
         {
             throw new ArgumentException($"Cannot process expression {expression}.");
         }
         return SqlBuilder.FromString
-            ($"CAST({VisitorFactory.Visit(expression.Object, visitedMembers)} AS {sqlGenerator.GetSqlType(typeof(string))})");
+            ($"CAST({VisitorFactory.Visit(expression.Object, visitArguments)} AS {sqlGenerator.GetSqlType(typeof(string))})");
     }
 }
