@@ -3,11 +3,29 @@ using Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors;
 using System;
 
 namespace Laraue.EfCoreTriggers.Common.Converters.QueryTranslator;
-public class FromTable(Type fromType, TableAliases aliases) : IFromSource
+public class FromTable : IFromSource
 {
-    public Type FromType { get; } = fromType;
+    public Type FromType { get; }
 
-    public string? Alias { get; } = aliases.GetNextTableAlias(fromType);
+    public Type RowType => FromType;
+
+    public string? Alias { get; }
+
+    public FromTable(Type fromType, TableAliases aliases)
+        : this(fromType, aliases.GetNextTableAlias(fromType))
+    {
+    }
+
+    public FromTable(Type fromType)
+        : this(fromType, alias: null)
+    {
+    }
+
+    public FromTable(Type fromType, string? alias)
+    {
+        FromType = fromType;
+        Alias = alias;
+    }
 
     public SqlBuilder GetSql(ISqlGenerator sqlGenerator, IExpressionVisitorFactory visitorFactory, VisitArguments visitedMembers) =>
         SqlBuilder.FromString(Alias switch

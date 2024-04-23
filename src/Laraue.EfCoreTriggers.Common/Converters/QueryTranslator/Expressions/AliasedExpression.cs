@@ -22,7 +22,4 @@ public abstract class AliasedExpression : Expression
 
     public static AliasedExpression FromExpression(ConstantExpression expression, string alias) =>
         new AliasedConstantExpression(expression, alias);
-
-    public static AliasedExpression FromExpression(MemberExpression expression, string alias) =>
-        new AliasedMemberExpression(expression, alias);
 }

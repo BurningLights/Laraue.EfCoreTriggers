@@ -35,13 +35,8 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
 
     protected override Expression VisitLambda<T>(Expression<T> node) =>
         // Do not visit Lambda body
+        // TODO: Pass Lambda body and parameters to ExpressionVisitor for replacing parameter nodes with aliased parameter nodes, if necessary
         node.Update(node.Body, VisitAndConvert(node.Parameters, nameof(VisitLambda)));
-
-    protected LambdaExpression? GetEnumerableLambdaArgument(ReadOnlyCollection<Expression> arguments) => arguments.Count < 2
-            ? null
-            : arguments[1] is not LambdaExpression lambda
-            ? throw new NotSupportedException($"Cannot translate argument {arguments[1]}")
-            : lambda;
 
     [DoesNotReturn]
     protected static void CannotTranslate(Expression expression) =>
@@ -127,24 +122,37 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
         return updatedExpression;
     }
 
-    protected (FromTable, Expression) JoinInfo(FromTable fromType, Expression toExpression)
+    protected Expression JoinWhere(IFromSource fromSource, IFromSource toSource)
     {
-        Type tableType = toExpression switch
+        KeyInfo[] relationKeys = _schemaRetriever.GetForeignKeyMembers(fromSource.RowType, toSource.RowType);
+
+        return relationKeys.Select(key => 
+            Expression.Equal(
+                Expression.MakeMemberAccess(Expression.Constant(null, fromSource.RowType).ToAliased(fromSource.Alias), key.ForeignKey),
+                Expression.MakeMemberAccess(Expression.Constant(null, toSource.RowType).ToAliased(fromSource.Alias), key.PrincipalKey)
+            )).Aggregate(Expression.And);
+    }
+
+    protected Expression LastJoin(IFromSource from, Expression toExpression)
+    {
+        IFromSource toSource = toExpression switch
         {
-            ParameterExpression paramExpression => paramExpression.Type,
-            MemberExpression memberExpression => memberExpression.Member.GetTableRefType(),
-            _ => throw new ArgumentException("The argument expression type is unknown.")
+            ParameterExpression parameter => new FromTable(parameter.Type),
+            MemberExpression member => new FromTable(member.Member.GetTableRefType(), aliases),
+            AliasedParameterExpression aliasedParameter => new FromTable(aliasedParameter.Type, aliasedParameter.Alias),
+            _ => throw new ArgumentException("The provided toExpression was not of a supported type.")
         };
 
-        KeyInfo[] relationKeys = _schemaRetriever.GetForeignKeyMembers(fromType.FromType, tableType);
+        return JoinWhere(from, toSource);
+    }
 
-        FromTable nextTable = new(tableType, aliases);
+    protected (IFromSource, Expression) JoinInfo(IFromSource from, MemberExpression? toExpression)
+    {
+        ArgumentNullException.ThrowIfNull(toExpression);
 
-        // TODO: Need separate alias types for MemberExpression, ParameterExpression, and ConstantExpression
-        return (nextTable,  relationKeys.Select(key => Expression.Equal(
-            Expression.MakeMemberAccess(Expression.Constant(null, fromType.FromType).ToAliased(fromType.Alias), key.ForeignKey),
-            Expression.MakeMemberAccess(toExpression, key.PrincipalKey)
-        )).Aggregate((left, right) => Expression.And(left, right)));
+        IFromSource toSource = new FromTable(toExpression.Type, aliases);
+
+        return (toSource, JoinWhere(from, toSource));
     }
 
     protected override Expression VisitMember(MemberExpression node)
@@ -155,21 +163,17 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
             Type? iEnumerable = updated.Type.GetInterfaces().FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
             if (iEnumerable is not null)
             {
-                Type fromType = iEnumerable.GetGenericArguments()[0];
-                FromTable fromTable = new(fromType, aliases);
-                translation.From = fromTable;
+                translation.From = new FromTable(iEnumerable.GetGenericArguments()[0], aliases);
                 if (JoinCandidates.Count > 0)
                 {
-                    // TODO: Don't need to alias if referencing main table
-                    (FromTable toTable, Expression whereExpression) = JoinInfo(fromTable, JoinCandidates[0]);
-                    translation.AddWhere(whereExpression);
-
-                    foreach(Expression join in JoinCandidates.Skip(1))
+                    IFromSource currentTable = translation.From;
+                    foreach(Expression join in JoinCandidates.Skip(1).Reverse())
                     {
-                        (FromTable nextTable, whereExpression) = JoinInfo(toTable, join);
-                        translation.Joins.Add(new TableJoin(nextTable, JoinType.INNER, whereExpression));
-                        toTable = nextTable;
+                        (currentTable, Expression whereExpression) = JoinInfo(currentTable, join as MemberExpression);
+                        translation.Joins.Add(new TableJoin(currentTable, JoinType.INNER, whereExpression));
                     }
+
+                    translation.AddWhere(LastJoin(currentTable, JoinCandidates[0]));
                 }
             }
             else if (_schemaRetriever.IsModel(memberExpression.Type))
@@ -222,9 +226,13 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
     {
         node = base.VisitExtension(node);
 
-        if(node is AliasedExpression)
+        if (node is AliasedParameterExpression && translation.From is null)
         {
-            // AliasedParameterExpression is valid
+            JoinCandidates.Add(node);
+        }
+        else if(node is AliasedExpression)
+        {
+            // Aliased expressions are valid
         }
         else
         {
