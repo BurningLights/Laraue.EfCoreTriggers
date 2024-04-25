@@ -31,7 +31,7 @@ public class TableAliases
         uint currIndex = _currentAliasIndex.ContainsKey(typeof(object)) ? ++_currentAliasIndex[typeof(object)] : (_currentAliasIndex[typeof(object)] = 0);
         StringBuilder builder = new();
 
-        for (uint index = currIndex; index >= 0; index -= 26)
+        for (long index = currIndex; index >= 0; index -= 26)
         {
             _ = builder.Append('A' + (index % 26));
         }

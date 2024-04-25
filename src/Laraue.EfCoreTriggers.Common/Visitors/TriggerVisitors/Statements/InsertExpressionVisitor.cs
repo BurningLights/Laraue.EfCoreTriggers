@@ -49,12 +49,12 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.TriggerVisitors.Statements
             if (expression.Body.Type.IsIEnumerable(out Type? iEnumerableType))
             {
                 insertType = iEnumerableType;
-                assignmentFields = _factory.VisitKeys(_selectTranslator.Translate(expression.Body).Select ?? 
+                assignmentFields = _factory.VisitKeys(_selectTranslator.Translate(expression.Body, visitedMembers.Aliases).Select ?? 
                     throw new NotSupportedException($"Query {expression.Body} has no select clause."));
                 assignmentQuery = _visitorFactory.Visit(expression.Body, visitedMembers);
                 // Strip off the extra parenthesis
                 string selectQuery = assignmentQuery.ToString();
-                assignmentQuery = SqlBuilder.FromString(selectQuery[(selectQuery.IndexOf('(') + 1)..(selectQuery.LastIndexOf(')'))]);
+                assignmentQuery = SqlBuilder.FromString(selectQuery[(selectQuery.IndexOf('(') + 1)..selectQuery.LastIndexOf(')')]);
             }
             else
             {

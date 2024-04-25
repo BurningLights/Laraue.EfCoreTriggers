@@ -51,6 +51,16 @@ namespace Laraue.EfCoreTriggers.Common.SqlGeneration
         string GetColumnSql(Type type, MemberInfo memberInfo, ArgumentType argumentType);
 
         /// <summary>
+        /// Get column SQL for an aliased table. E.g. "Table"."column_name" depending on argument
+        /// and its type.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="memberInfo"></param>
+        /// <param name="tableAlias"></param>
+        /// <returns></returns>
+        string GetColumnSql(Type type, MemberInfo memberInfo, string tableAlias);
+
+        /// <summary>
         /// Get table SQL, e.g. "dbo"."Users".
         /// </summary>
         /// <param name="entity"></param>

@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 namespace Laraue.EfCoreTriggers.Common.Converters.QueryTranslator;
 public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : ExpressionVisitor, ISelectTranslator
 {
-    protected readonly IDbSchemaRetriever _schemaRetriever = schemaRetriever;
+    protected readonly IDbSchemaRetriever schemaRetriever = schemaRetriever;
 
     protected TranslatedSelect translation = new();
     protected TableAliases aliases = new(schemaRetriever);
@@ -33,10 +33,22 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
         return translation;
     }
 
-    protected override Expression VisitLambda<T>(Expression<T> node) =>
+    protected override Expression VisitLambda<T>(Expression<T> node)
+    {
+        if (translation.From?.Alias is not null)
+        {
+            ParameterExpression? tableParameter = node.Parameters.Single(p => p.Type == translation.From.RowType);
+            if (tableParameter is not null)
+            {
+                return node.Update(new ParameterReplacementVisitor(tableParameter, translation.From.Alias).Visit(node.Body), node.Parameters);
+            }
+        }
+
+        return node;
+    }
         // Do not visit Lambda body
         // TODO: Pass Lambda body and parameters to ExpressionVisitor for replacing parameter nodes with aliased parameter nodes, if necessary
-        node.Update(node.Body, VisitAndConvert(node.Parameters, nameof(VisitLambda)));
+        //node.Update(node.Body, VisitAndConvert(node.Parameters, nameof(VisitLambda)));
 
     [DoesNotReturn]
     protected static void CannotTranslate(Expression expression) =>
@@ -93,7 +105,7 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
                 }
             }
             else if (methodCallExpression.Method.MethodMatches(typeof(TableRef), nameof(TableRef.Table)) &&
-                _schemaRetriever.IsModel(methodCallExpression.Method.GetGenericArguments()[0]))
+                schemaRetriever.IsModel(methodCallExpression.Method.GetGenericArguments()[0]))
             {
                 translation.From = new FromTable(methodCallExpression.Method.GetGenericArguments()[0], aliases);
             }
@@ -124,7 +136,7 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
 
     protected Expression JoinWhere(IFromSource fromSource, IFromSource toSource)
     {
-        KeyInfo[] relationKeys = _schemaRetriever.GetForeignKeyMembers(fromSource.RowType, toSource.RowType);
+        KeyInfo[] relationKeys = schemaRetriever.GetForeignKeyMembers(fromSource.RowType, toSource.RowType);
 
         return relationKeys.Select(key => 
             Expression.Equal(
@@ -139,7 +151,7 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
         {
             ParameterExpression parameter => new FromTable(parameter.Type),
             MemberExpression member => new FromTable(member.Member.GetTableRefType(), aliases),
-            AliasedParameterExpression aliasedParameter => new FromTable(aliasedParameter.Type, aliasedParameter.Alias),
+            AliasedExpression aliased => new FromTable(aliased.Type, aliased.Alias),
             _ => throw new ArgumentException("The provided toExpression was not of a supported type.")
         };
 
@@ -176,7 +188,7 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
                     translation.AddWhere(LastJoin(currentTable, JoinCandidates[0]));
                 }
             }
-            else if (_schemaRetriever.IsModel(memberExpression.Type))
+            else if (schemaRetriever.IsModel(memberExpression.Type))
             {
                 JoinCandidates.Add(memberExpression);
             }
@@ -197,15 +209,9 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
     {
         Expression updated = base.VisitParameter(node);
 
-        // Ignore lambda paramters, which come after From is set
-        if (translation.From is not null)
-        {
-            return updated;
-        }
-
         if (updated is ParameterExpression parameterExpression)
         {
-            if (_schemaRetriever.IsModel(parameterExpression.Type))
+            if (schemaRetriever.IsModel(parameterExpression.Type))
             {
                 JoinCandidates.Add(parameterExpression);
             }

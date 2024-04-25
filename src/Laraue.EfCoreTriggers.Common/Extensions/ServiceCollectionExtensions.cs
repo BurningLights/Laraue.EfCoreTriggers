@@ -10,7 +10,9 @@ using Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable.Select;
 using Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable.Sum;
 using Laraue.EfCoreTriggers.Common.Converters.MethodCall.Functions;
 using Laraue.EfCoreTriggers.Common.Converters.MethodCall.Int32.ToString;
+using Laraue.EfCoreTriggers.Common.Converters.MethodCall.Math.Max;
 using Laraue.EfCoreTriggers.Common.Converters.QueryTranslator;
+using Laraue.EfCoreTriggers.Common.Converters.QueryTranslator.Expressions;
 using Laraue.EfCoreTriggers.Common.Migrations;
 using Laraue.EfCoreTriggers.Common.SqlGeneration;
 using Laraue.EfCoreTriggers.Common.TriggerBuilders.Abstractions;
@@ -116,6 +118,7 @@ namespace Laraue.EfCoreTriggers.Common.Extensions
                 .AddExpressionVisitor<ParameterExpression, ParameterExpressionVisitor>()
                 .AddExpressionVisitor<ConditionalExpression, ConditionalExpressionVisitor>()
                 .AddExpressionVisitor<MemberInitExpression, MemberInitExpressionVisitor>()
+                .AddExpressionVisitor<AliasedExpression, AliasedExpressionVisitor>()
 
                 .AddMethodCallConverter<CountVisitor>()
                 .AddMethodCallConverter<SumVisitor>()
@@ -127,6 +130,8 @@ namespace Laraue.EfCoreTriggers.Common.Extensions
                 .AddMethodCallConverter<GetTableNameVisitor>()
                 .AddMethodCallConverter<GetColumnNameVisitor>()
                 .AddMethodCallConverter<Int32ToStringVisitor>()
+                .AddMethodCallConverter<MathMaxVisitor>()
+                .AddMethodCallConverter<MathMinVisitor>()
 
                 .AddScoped<VisitingInfo>()
 

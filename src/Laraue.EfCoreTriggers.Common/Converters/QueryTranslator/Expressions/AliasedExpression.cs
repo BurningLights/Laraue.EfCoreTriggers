@@ -17,6 +17,8 @@ public abstract class AliasedExpression : Expression
         Alias = alias;
     }
 
+    protected override Expression VisitChildren(ExpressionVisitor visitor) => this;
+
     public static AliasedExpression FromExpression(ParameterExpression expression, string alias) =>
         new AliasedParameterExpression(expression, alias);
 

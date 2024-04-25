@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq.Expressions;
+using Laraue.EfCoreTriggers.Common.Converters.QueryTranslator.Expressions;
 using Laraue.EfCoreTriggers.Common.SqlGeneration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -25,6 +26,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
         /// <inheritdoc />
         public SqlBuilder Visit(Expression expression, VisitArguments visitedMembers)
         {
+            // TODO: Handle Aliased expression
             return expression switch
             {
                 BinaryExpression binary => Visit(binary, visitedMembers),
@@ -37,6 +39,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
                 ParameterExpression parameterExpression => Visit(parameterExpression, visitedMembers),
                 ConditionalExpression conditional => Visit(conditional, visitedMembers),
                 MemberInitExpression memberInit => Visit(memberInit, visitedMembers),
+                AliasedExpression aliased => Visit(aliased, visitedMembers),
                 _ => throw new NotSupportedException($"Expression of type {expression.GetType()} is not supported")
             };
         }

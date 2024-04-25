@@ -19,6 +19,8 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
             {
                 return GetNewDateTimeOffsetSql();
             }
+
+            // TODO: Handle new of anonymous type
         
             throw new NotImplementedException();
         }

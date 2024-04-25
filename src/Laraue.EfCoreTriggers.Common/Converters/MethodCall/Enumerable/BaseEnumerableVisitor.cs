@@ -31,7 +31,7 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable
         /// <inheritdoc />
         public override SqlBuilder Visit(MethodCallExpression expression, VisitArguments visitArguments)
         {
-            TranslatedSelect expressions = selectTranslator.Translate(expression);
+            TranslatedSelect expressions = selectTranslator.Translate(expression, visitArguments.Aliases);
             if (expressions.From is null)
             {
                 throw new InvalidOperationException("No FROM model for the query was found.");
@@ -48,7 +48,7 @@ namespace Laraue.EfCoreTriggers.Common.Converters.MethodCall.Enumerable
             {
                 SqlBuilder joinSql = finalSql.WithIdent(x => x
                     .AppendNewLine(SqlGenerator.GetJoinTypeSql(join.JoinType))
-                    .Append(" ").Append(SqlGenerator.GetTableSql(join.Table)));
+                    .Append(" ").Append(join.Table.GetSql(SqlGenerator, VisitorFactory, visitArguments)));
                 if (join.On is not null)
                 {
                     joinSql.Append(" ON (").Append(VisitorFactory.Visit(join.On, visitArguments)).Append(")");

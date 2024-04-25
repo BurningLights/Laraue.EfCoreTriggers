@@ -93,6 +93,13 @@ namespace Laraue.EfCoreTriggers.Common.SqlGeneration
             };
         }
 
+        public string GetColumnSql(Type type, MemberInfo memberInfo, string tableAlias) => 
+            "{WrapWithDelimiters(tableAlias)}." + WrapWithDelimiters(_adapter.IsModel(type) switch
+            {
+                true => _adapter.GetColumnName(type, memberInfo),
+                false => type == memberInfo.ReflectedType ? memberInfo.Name : throw new ArgumentException("The type and memberInfo type do not match")
+            });
+
         /// <inheritdoc />
         public string GetTableSql(Type entity)
         {

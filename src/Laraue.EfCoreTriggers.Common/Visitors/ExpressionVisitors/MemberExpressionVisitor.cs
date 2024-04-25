@@ -1,16 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Numerics;
 using System.Reflection;
 using Laraue.EfCoreTriggers.Common.Converters.MemberAccess;
+using Laraue.EfCoreTriggers.Common.Converters.QueryTranslator.Expressions;
 using Laraue.EfCoreTriggers.Common.Extensions;
 using Laraue.EfCoreTriggers.Common.SqlGeneration;
 using Laraue.EfCoreTriggers.Common.TriggerBuilders;
 using Laraue.EfCoreTriggers.Common.TriggerBuilders.TableRefs;
-using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
 namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
 {
@@ -79,12 +77,14 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
             else if (_schemaRetriever.IsRelation(memberExpression.Expression.Type, memberExpression.Member))
             {
                 return CanShortcut(memberExpression.Expression.Type, memberExpression.Member, out KeyInfo[] foreignKeys, out MemberInfo[] primaryKeys)
-                    ? GetColumnSql(memberExpression.Expression.Type, foreignKeys[0].ForeignKey, argumentType) :
-                    GetColumnSql(memberExpression, primaryKeys[0], visitedMembers);
+                    ? GetColumnSql(memberExpression.Expression.Type, foreignKeys[0].ForeignKey, argumentType, 
+                        (memberExpression.Expression as AliasedExpression)?.Alias) 
+                    : GetColumnSql(memberExpression, primaryKeys[0], visitedMembers);
             }
             else
             {
-                return GetColumnSql(memberExpression.Expression.Type, memberExpression.Member, argumentType);
+                return GetColumnSql(memberExpression.Expression.Type, memberExpression.Member, argumentType, 
+                    (memberExpression.Expression as AliasedExpression)?.Alias);
             }
         }
 
@@ -159,7 +159,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
             return GetColumnSql(memberType, parentMember, argumentType);
         }
 
-        private string GetColumnSql(Type? tableType, MemberInfo columnMember, ArgumentType argumentType)
+        private string GetColumnSql(Type? tableType, MemberInfo columnMember, ArgumentType argumentType, string? tableAlias = null)
         {
             if (argumentType is ArgumentType.New or ArgumentType.Old)
             {
@@ -169,10 +169,11 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors
                     argumentType);
             }
 
-            return _generator.GetColumnSql(
-                tableType!,
-                columnMember,
-                argumentType);
+            ArgumentNullException.ThrowIfNull(tableType);
+
+            return tableAlias is null ? 
+                _generator.GetColumnSql(tableType, columnMember, argumentType)
+                : _generator.GetColumnSql(tableType, columnMember, tableAlias);
         }
         
         private SqlBuilder Visit(MemberExpression expression)

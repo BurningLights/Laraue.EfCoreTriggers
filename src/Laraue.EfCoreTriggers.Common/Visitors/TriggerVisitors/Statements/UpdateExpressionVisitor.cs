@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Diagnostics;
+using System.Linq;
 using System.Linq.Expressions;
 using Laraue.EfCoreTriggers.Common.SqlGeneration;
 using Laraue.EfCoreTriggers.Common.TriggerBuilders;
@@ -29,7 +30,7 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.TriggerVisitors.Statements
         public SqlBuilder Visit(LambdaExpression expression, VisitArguments visitedMembers)
         {
             var updateType = expression.Body.Type;
-        
+
             var assignmentParts = _memberInfoVisitorFactory.Visit(
                 expression,
                 visitedMembers);
