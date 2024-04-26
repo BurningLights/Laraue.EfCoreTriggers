@@ -7,7 +7,8 @@ public class SqliteNewExpressionVisitor : NewExpressionVisitor
 {
     private readonly ISqlGenerator _sqlGenerator;
 
-    public SqliteNewExpressionVisitor(ISqlGenerator sqlGenerator)
+    public SqliteNewExpressionVisitor(ISqlGenerator sqlGenerator, IExpressionVisitorFactory visitorFactory)
+        : base(sqlGenerator, visitorFactory)
     {
         _sqlGenerator = sqlGenerator;
     }

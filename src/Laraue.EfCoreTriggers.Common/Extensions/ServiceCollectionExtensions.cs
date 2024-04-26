@@ -129,6 +129,7 @@ namespace Laraue.EfCoreTriggers.Common.Extensions
                 .AddMethodCallConverter<CoalesceVisitor>()
                 .AddMethodCallConverter<GetTableNameVisitor>()
                 .AddMethodCallConverter<GetColumnNameVisitor>()
+                .AddMethodCallConverter<RawSqlSnippetVisitor>()
                 .AddMethodCallConverter<Int32ToStringVisitor>()
                 .AddMethodCallConverter<MathMaxVisitor>()
                 .AddMethodCallConverter<MathMinVisitor>()

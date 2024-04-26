@@ -17,5 +17,8 @@ public class RawSqlSnippetVisitor : BaseTriggerFunctionsVisitor
 
     protected override string MethodName => nameof(TriggerFunctions.RawSqlSnippet);
 
-    public override SqlBuilder Visit(MethodCallExpression expression, VisitArguments visitArguments) => VisitorFactory.Visit(expression.Arguments[0], visitArguments);
+    public override SqlBuilder Visit(MethodCallExpression expression, VisitArguments visitArguments) =>
+        expression.Arguments[0] is ConstantExpression constant && constant.Value is string sql ?
+        SqlBuilder.FromString(string.Format(sql, expression.Arguments.Skip(1).Select(x => VisitorFactory.Visit(x, visitArguments)).ToArray())) 
+        : throw new NotSupportedException($"The expression {expression} cannot be translated to raw SQL.");
 }
