@@ -51,6 +51,6 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.TriggerVisitors
         public abstract string GenerateCreateTriggerSql(ITrigger trigger);
 
         /// <inheritdoc />
-        public abstract string GenerateDeleteTriggerSql(string triggerName, IEntityType entityType);
+        public abstract string GenerateDeleteTriggerSql(string triggerName, int actionCount, IEntityType entityType);
     }
 }

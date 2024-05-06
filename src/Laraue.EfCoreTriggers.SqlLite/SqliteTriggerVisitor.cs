@@ -47,10 +47,10 @@ public class SqliteTriggerVisitor : BaseTriggerVisitor
         return sql;
     }
 
-    public override string GenerateDeleteTriggerSql(string triggerName, IEntityType entityType)
-    {
-        return SqlBuilder.FromString("PRAGMA writable_schema = 1; ")
-            .AppendNewLine($"DELETE FROM sqlite_master WHERE type = 'trigger' AND name like '{triggerName}%';")
-            .AppendNewLine("PRAGMA writable_schema = 0;");
-    }
+    public override string GenerateDeleteTriggerSql(string triggerName, int triggerCount, IEntityType entityType) =>
+        triggerCount > 1
+            ? new SqlBuilder().AppendViaNewLine("", Enumerable
+                .Range(0, triggerCount)
+                .Select(i => SqlBuilder.FromString($"DROP TRIGGER {triggerName}_{i};")))
+            : SqlBuilder.FromString($"DROP TRIGGER {triggerName};");
 }

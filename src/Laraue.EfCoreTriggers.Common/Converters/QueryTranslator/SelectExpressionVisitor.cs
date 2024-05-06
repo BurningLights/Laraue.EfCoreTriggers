@@ -1,6 +1,7 @@
 ﻿using Laraue.EfCoreTriggers.Common.Converters.QueryTranslator.Expressions;
 using Laraue.EfCoreTriggers.Common.Extensions;
 using Laraue.EfCoreTriggers.Common.SqlGeneration;
+using Laraue.EfCoreTriggers.Common.TriggerBuilders;
 using Laraue.EfCoreTriggers.Common.TriggerBuilders.TableRefs;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using System;
@@ -16,9 +17,10 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Laraue.EfCoreTriggers.Common.Converters.QueryTranslator;
-public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : ExpressionVisitor, ISelectTranslator
+public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever, ISqlGenerator sqlGenerator) : ExpressionVisitor, ISelectTranslator
 {
     protected readonly IDbSchemaRetriever schemaRetriever = schemaRetriever;
+    protected readonly ISqlGenerator sqlGenerator = sqlGenerator;
 
     protected TranslatedSelect translation = new();
     protected TableAliases aliases = new(schemaRetriever);
@@ -141,7 +143,7 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
         return relationKeys.Select(key => 
             Expression.Equal(
                 Expression.MakeMemberAccess(Expression.Constant(null, fromSource.RowType).ToAliased(fromSource.Alias), key.ForeignKey),
-                Expression.MakeMemberAccess(Expression.Constant(null, toSource.RowType).ToAliased(fromSource.Alias), key.PrincipalKey)
+                Expression.MakeMemberAccess(Expression.Constant(null, toSource.RowType).ToAliased(toSource.Alias), key.PrincipalKey)
             )).Aggregate(Expression.And);
     }
 
@@ -150,7 +152,12 @@ public class SelectExpressionVisitor(IDbSchemaRetriever schemaRetriever) : Expre
         IFromSource toSource = toExpression switch
         {
             ParameterExpression parameter => new FromTable(parameter.Type),
-            MemberExpression member => new FromTable(member.Member.GetTableRefType(), aliases),
+            MemberExpression member => new FromTable(member.Member.GetTableRefType(), member.Member.GetArgumentType() switch 
+                {
+                    ArgumentType.Old => sqlGenerator.OldEntityPrefix,
+                    ArgumentType.New => sqlGenerator.NewEntityPrefix,
+                    _ => throw new ArgumentException("The provided toExpression must refer to a table ref when it is a MemberExpression.")
+                }),
             AliasedExpression aliased => new FromTable(aliased.Type, aliased.Alias),
             _ => throw new ArgumentException("The provided toExpression was not of a supported type.")
         };

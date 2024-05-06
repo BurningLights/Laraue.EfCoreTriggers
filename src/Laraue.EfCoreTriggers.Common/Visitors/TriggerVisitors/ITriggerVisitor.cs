@@ -19,8 +19,9 @@ namespace Laraue.EfCoreTriggers.Common.Visitors.TriggerVisitors
         /// Generates drop trigger SQL.
         /// </summary>
         /// <param name="triggerName"></param>
+        /// <param name="triggerCount"></param>
         /// <param name="entityType"></param>
         /// <returns></returns>
-        string GenerateDeleteTriggerSql(string triggerName, IEntityType entityType);
+        string GenerateDeleteTriggerSql(string triggerName, int triggerCount, IEntityType entityType);
     }
 }

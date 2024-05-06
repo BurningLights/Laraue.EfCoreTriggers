@@ -3,6 +3,7 @@ using Laraue.EfCoreTriggers.Common.SqlGeneration;
 using Laraue.EfCoreTriggers.Common.Visitors.ExpressionVisitors;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
@@ -19,6 +20,6 @@ public class RawSqlSnippetVisitor : BaseTriggerFunctionsVisitor
 
     public override SqlBuilder Visit(MethodCallExpression expression, VisitArguments visitArguments) =>
         expression.Arguments[0] is ConstantExpression constant && constant.Value is string sql ?
-        SqlBuilder.FromString(string.Format(sql, expression.Arguments.Skip(1).Select(x => VisitorFactory.Visit(x, visitArguments)).ToArray())) 
+        SqlBuilder.FromString(string.Format(sql, ((NewArrayExpression)expression.Arguments[1]).Expressions.Select(x => VisitorFactory.Visit(x, visitArguments)).ToArray())) 
         : throw new NotSupportedException($"The expression {expression} cannot be translated to raw SQL.");
 }

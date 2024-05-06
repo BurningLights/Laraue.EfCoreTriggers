@@ -8,6 +8,7 @@ public class TableAliases
 {
     private readonly Dictionary<Type, uint> _currentAliasIndex = [];
     private readonly IDbSchemaRetriever _schemaRetriever;
+    private const int CharCount = 'Z' - 'A' + 1;
 
     public TableAliases(IDbSchemaRetriever schemaRetriever)
     {
@@ -31,9 +32,9 @@ public class TableAliases
         uint currIndex = _currentAliasIndex.ContainsKey(typeof(object)) ? ++_currentAliasIndex[typeof(object)] : (_currentAliasIndex[typeof(object)] = 0);
         StringBuilder builder = new();
 
-        for (long index = currIndex; index >= 0; index -= 26)
+        for (long index = currIndex; index >= 0; index -= CharCount)
         {
-            _ = builder.Append('A' + (index % 26));
+            _ = builder.Append((char)('A' + (index % CharCount)));
         }
 
         return builder.ToString();

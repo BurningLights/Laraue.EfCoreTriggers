@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Laraue.EfCoreTriggers.Common.Visitors.TriggerVisitors;
@@ -252,9 +253,11 @@ namespace Laraue.EfCoreTriggers.Common.Migrations
             IAnnotation annotation,
             IEntityType entityType)
         {
+            string sql = annotation.Value?.ToString() ?? "";
+
             list.Add(new SqlOperation
             {
-                Sql = triggerVisitor.GenerateDeleteTriggerSql(annotation.Name, entityType),
+                Sql = triggerVisitor.GenerateDeleteTriggerSql(annotation.Name, sql.Split("CREATE TRIGGER").Length - 1, entityType),
             });
         }
     }
